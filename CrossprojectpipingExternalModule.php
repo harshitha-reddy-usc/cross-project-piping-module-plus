@@ -662,7 +662,6 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 					var cppAjaxConnections = 0;
 					var cppFoundField = false;
 					var cppProcessing = true;
-//console.log(fields);
 					$.each(fields, function(field,params) {
 						var value = params.params;
 						var nodes = value.split(/\]\[/);
@@ -675,7 +674,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 							if (nodes.length == 2) {
 								remaining = "[" + nodes[1] + "]";
 							} else {
-                                remaining = "[" + nodes[1] + "][" + nodes[2] + "]";
+									remaining = "[" + nodes[1] + "][" + nodes[2] + "]";
 							}
 
 							var match = <?= json_encode($match) ?>;
@@ -697,9 +696,8 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 								cppAjaxConnections++;
 								var ajaxCountLimit = 0;
 								// console.log('++cppAjaxConnections = '+cppAjaxConnections);
-								//console.log(url);
-								$.post(url, { thisrecord: '<?= htmlspecialchars($_GET['id'], ENT_QUOTES) ?>', thispid: <?= intval($_GET['pid']) ?>, thisinstance: <?= intval($repeat_instance) ?>, thismatch: match[field]['params'], matchsource: matchSourceParam, getlabel: getLabel, otherpid: nodes[0], otherlogic: remaining, choices: JSON.stringify(choices) }, function(data) {
-                                    //console.log(data);
+								
+								$.post(url, { thisrecord: '<?= htmlspecialchars($_GET['id'], ENT_QUOTES) ?>', thispid: <?= intval($_GET['pid']) ?>, thismatch: match[field]['params'], matchsource: matchSourceParam, getlabel: getLabel, otherpid: nodes[0], otherlogic: remaining, choices: JSON.stringify(choices) }, function(data) {
 									if(data.length && typeof(data) == 'string' && data.indexOf(<?=json_encode(\RCView::tt("dataqueries_352"))?>) >= 0) {
 										if(ajaxCountLimit >= 1000) {
 											return;
@@ -719,7 +717,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 
 									var tr = $('tr[sq_id='+field+']');
 									var id = lastNode.match(/\([^\s]+\)/);
-									 //console.log("Setting "+field+" to "+data);
+									// console.log("Setting "+field+" to "+data);
 									if (typeof(data) == 'object') {    // checkbox
 										$.each(data, function( index, value ) {
 											var input = $('input:checkbox[code="'+index+'"]', tr);
@@ -767,18 +765,12 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 												// $('[name="'+field+'"]').change();
 											}
 										} else {
-											const unescapedData = data
-												.replace(/&amp;/g, "&")
-												.replace(/&lt;/g, "<")
-												.replace(/&gt;/g, ">")
-												.replace(/&quot;/g, "\"")
-												.replace(/&#039;/g, "'")
-											$('[name="'+field+'"]').val(unescapedData);
+											$('[name="'+field+'"]').val(data);
 											addBranchingField(field, $('[name="'+field+'"]'));
 											// $('[name="'+field+'"]').change();
 										}
 
-										 //console.log("D Setting "+field+" to "+$('[name="'+field+'"]').val());
+										// console.log("D Setting "+field+" to "+$('[name="'+field+'"]').val());
 										if ($('[name="'+field+'___radio"][value="'+data+'"]').length > 0) {
 											$('[name="'+field+'___radio"][value="'+data+'"]').prop('checked', true);
 											addBranchingField(field, $('[name="'+field+'___radio"][value="'+data+'"]'));
@@ -807,7 +799,6 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 							}
 						}
 					});
-
 					if(cppFoundField == false) {
 						// Looks like we never found a field. Remove loading overlay.
 						cppProcessing = false;
@@ -858,8 +849,16 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 		$project_ids = $this->getProjectSetting('project-id');
 		$dest_match_fields = $this->getProjectSetting('field-match');
 		$source_match_fields = $this->getProjectSetting('field-match-source');
+		$dest_match_fields_secondary = $this->getProjectSetting('field-match-destination-secondary');
+		$source_match_fields_secondary = $this->getProjectSetting('field-match-source-secondary');
+		$number_secondary_matches = $this->getProjectSetting('number-secondary-matches');
 		$dest_fields = $this->getProjectSetting('data-destination-field');
 		$source_fields = $this->getProjectSetting('data-source-field');
+		$cross_match_status = $this->getProjectSetting('cross-match-status');
+		$cross_match_id = $this->getProjectSetting('cross-match-id');
+		$cross_match_number = $this->getProjectSetting('cross-match-number');
+		$cross_match_fields = $this->getProjectSetting('cross-match-fields');
+
 		
 		// fill $projects['source'] array with source project info arrays
 		foreach ($project_ids as $project_index => $pid) {
@@ -868,8 +867,16 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 				'source_match_field' => $source_match_fields[$project_index],
 				'dest_match_field' => $dest_match_fields[$project_index],
 				'dest_fields' => $dest_fields[$project_index],
+				'source_match_field_secondary' => $source_match_fields_secondary[$project_index],
+				'dest_match_field_secondary' => $dest_match_fields_secondary[$project_index],
+				'number_secondary_matches' => $number_secondary_matches[$project_index],
 				'source_fields' => $source_fields[$project_index],
-				'dest_forms_by_field_name' => []
+				'dest_forms_by_field_name' => [],
+				'cross_match_status' => $status[$cross_match_status],
+				'cross_match_id' => $status[$cross_match_id],
+				'cross_match_number' => $status[$cross_match_number],
+				'cross_match_fields' => $status[$cross_match_fields]
+
 			];
 			
 			// where source data/match fields are empty, use destination match/data field names
@@ -882,6 +889,13 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 				if (empty($field_name)) {
 					$source_project['source_fields'][$list_index] = $matching_destination_field_name;
 				}
+
+				foreach ($source_project['source_match_field_secondary'] as $list_ind => $sec_field_name) {
+					if (empty($sec_field_name)) {
+						$source_project['source_match_field_secondary'][$list_ind] = $source_project['dest_match_field_secondary'][$list_ind];
+					}
+				}
+
 				
 				// add an entry to dest_forms_by_field_name for this source field
 				$actual_field_name = $source_project['dest_fields'][$list_index];
@@ -982,7 +996,9 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 			$project_id = $project['project_id'];
 			
 			$match_field = $project['source_match_field'];
-			$fields = $project['source_fields'];
+			#$match_field = array_merge($project['source_match_field'], $project['source_match_field_secondary']);
+			#$fields = $project['source_fields'];
+			$fields = array_merge($project['source_fields'], ['record_id'], $project['source_match_field_secondary']);
 			if (!in_array($match_field, $fields)) {
 				$fields[] = $match_field;
 			}
@@ -990,11 +1006,21 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 			$params = [
 				'project_id' => $project_id,
 				'return_format' => 'array',
-				'fields' => $fields,
-				'filterLogic' => "[$match_field] <> ''"
+				'fields' => $fields
+				#'filterLogic' => "[$match_field] <> ''"
 			];
-
 			$this->projects['source'][$project_index]['source_data'] = \REDCap::getData($params);
+
+
+            $cross_non_matched_ids = [];
+			foreach ($this->projects['source'][$project_index]['source_data'] as $src_rid => $src_rec) {
+				// iterate over each event in the source record, add/overwite data for pipe fields along the way
+				foreach ($src_rec as $eid => $field_data) {
+					array_push($cross_non_matched_ids, $field_data[$match_field]);
+				}
+			}
+			$this->projects['source'][$project_index]['cross_non_matched_ids'] = $cross_non_matched_ids;
+
 		}
 	}
 	
@@ -1008,7 +1034,8 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 		foreach ($this->projects['source'] as $project_index => $project) {
 			$match_field_names[] = $project['dest_match_field'];
 		}
-		$match_field_names = array_unique($match_field_names);
+		#$match_field_names = array_unique($match_field_names);
+		$match_field_names = array_unique($match_field_names + $project['dest_match_field_secondary']);
 		
 		$params = [
 			'project_id' => $this->projects['destination']['project_id'],
@@ -1035,134 +1062,251 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 		if (gettype($this->projects) == 'Array') {
 			throw new \Exception("The Cross Project Piping module expected \$module->projects to be an array before calling pipeToRecord()");
 		}
-
+		
 		// return early if this record has all empty destination match field values
 		$record_match_info = $this->projects['destination']['records_match_fields'][$dst_rid];
 		if (empty($record_match_info)) {
 			return;
 		}
-
+		
 		// create the arrays that we'll eventually give to REDCap::saveData
 		$data_to_save = [
 			"$dst_rid" => []
 		];
 		$data_repeatable_to_save = [];
-        $returnarray = $resultData = array();
+		
 		// for every source project:
 		foreach ($this->projects['source'] as $p_index => $src_project) {
 			// get the destination match field name
 			$dest_match_field = $src_project['dest_match_field'];
-
+			$record_match_value = $record_match_info[$dest_match_field];
+			
+			// if destination match field empty, there may be a repeatable instrument
+			if (empty($record_match_value)) {
+				$record_match_value = $record_match_info;
+			}
+			
 			// is the source match field in the set of piped fields?
 			$src_match_field = $src_project['source_match_field'];
 			$source_match_field_is_in_pipe_fields = in_array($src_match_field, $src_project['source_fields'], true) !== false;
-
-            //$dataToSave = $this->transferRecordData($src_project['source_data']);
+			
 			// copy pipe values from source records whose match field value matches
+			$match_status = '';
+			$matched_ids = [];
+			$matched_fields_number = [];
+			$matched_fields_names = [];
+
+
 			foreach ($src_project['source_data'] as $src_rid => $src_rec) {
 				// iterate over each event in the source record, add/overwite data for pipe fields along the way
 				foreach ($src_rec as $eid => $field_data) {
-                    if ($eid == "repeat_instances") {
-                        foreach ($field_data as $ieid => $formData) {
-                            foreach ($formData as $formName => $instanceData) {
-                                foreach ($instanceData as $iNum => $subData) {
-                                    $resultData = $this->processDataTransfer($resultData,$dst_rid,$src_project,$ieid,$subData,$src_match_field,$dest_match_field,$source_match_field_is_in_pipe_fields,$iNum);
+					// if this eid corresponds to a destination project event.. copy data to save to destination record
+					$src_event_name = $src_project['events'][$eid];
+					$dst_event_id = array_search($src_event_name, $this->projects['destination']['events'], true);
+					
+					// skip this event if a matching event name wasn't found in the destination project
+					if (empty($dst_event_id)) {
+						continue;
+					}
+					
+					// skip this event if the event_id isn't valid (eid is only valid if it has the same name as the name of the event contains the form that contains the destination match field)
+					# Quick-Fix for PHP8 Support
+					if (in_array($eid, (array) $src_project['valid_match_event_ids']) === false) {
+						continue;
+					}
+					
+					// if the source record doesn't match the destination record, it may be a repeatable record
+					// if it's a repeatable record, check if any of the instances contains the destination field
+					// that match the source field. If not, continue
+					$repeatable = false;
+					$instances = [];
+					if ($record_match_value != $field_data[$src_match_field]) {
+						$equal = false;
+						foreach($record_match_value as $event_id => $event_result) {
+							foreach($event_result as $form_name => $form_result) {
+								foreach($form_result as $instance => $instance_result) {
+									if ($instance_result[$dest_match_field] == $field_data[$src_match_field]) {
+										$equal = true;
+										array_push($instances, $instance);
+									}
+								}
+							}
+						}
+						if($equal === true) {
+						    $repeatable = true;
+						}
+
+						$match_count = 0;
+						$partial = false;
+						$matched_fields = [];
+                        if($equal === false && $match_status != 'exact') {
+                            foreach($src_project['dest_match_field_secondary'] as $list_ind => $sec_field_name_dest ) { 
+                                $record_match_value_sec = $record_match_info[$sec_field_name_dest];
+                                $sec_field_name_source = $src_project['source_match_field_secondary'][$list_ind];
+                                if (empty($field_data[$sec_field_name_source]) || empty($record_match_value_sec)) {
+						            continue;
+                                }
+                                if (strtolower($record_match_value_sec) == strtolower($field_data[$sec_field_name_source])) {
+                                    $match_count = $match_count + 1;
+                                    array_push($matched_fields, $sec_field_name_dest);
+                                }
+                            }
+                            if ($match_count >= intval($src_project['number_secondary_matches'])) {
+                                $partial = true;
+                                if (($key = array_search($field_data[$src_match_field], $src_project['cross_non_matched_ids'])) !== false) {
+                                    unset($src_project['cross_non_matched_ids'][$key]);
                                 }
                             }
                         }
+
+                        if ($equal === false && $partial === false) {
+                            continue;
+                        }
+
+                        if($partial === true) {
+                        	$match_status = 'partial';
+                        	array_push($matched_ids, $field_data[$src_match_field]);
+                        	array_push($matched_fields_number, $match_count);
+                        	array_push($matched_fields_names, implode(",", $matched_fields));
+                            continue;
+                        }
+
+					}
+
+                    $match_status = 'exact';
+                    if (($key = array_search($field_data[$src_match_field], $src_project['cross_non_matched_ids'])) !== false) {
+                        unset($src_project['cross_non_matched_ids'][$key]);
                     }
-                    else {
-                        $resultData = $this->processDataTransfer($resultData,$dst_rid,$src_project,$eid,$field_data,$src_match_field,$dest_match_field,$source_match_field_is_in_pipe_fields);
-                    }
+
+					foreach ($field_data as $field_name => $field_value) {
+						// skip this field if it's the match field and match field isn't in the set of fields to be piped
+						
+						if (
+							$field_name == $src_match_field
+							&&
+							!$source_match_field_is_in_pipe_fields
+						) {
+							continue;
+						}
+
+						if ($field_name == 'record_id') {
+							continue;
+						}
+
+						if (in_array($field_name, $src_project['source_match_field_secondary'], true) !== false 
+					        &&
+					        in_array($field_name, $src_project['source_fields'], true) === false){
+							continue;
+						}
+
+						// get the destination project's name for this source pipe field
+						$pipe_field_index = array_search($field_name, $src_project['source_fields'], true);
+						$dst_name = $src_project['dest_fields'][$pipe_field_index];
+
+						// skip this field if the destination record's form status for the containing form is above the pipe limit
+						$form_name = $src_project['dest_forms_by_field_name'][$dst_name];
+
+						if (intval($this->formStatuses[$dst_rid][$dst_event_id][$form_name . '_complete']) > $this->pipe_on_status) {
+							continue;
+						}
+						
+						// skip if this field isn't in an 'active' form
+						if (!empty($this->active_forms) && !in_array($form_name, $this->active_forms)) {
+							continue;
+						}
+						
+						if (!empty($dst_name)) {
+							if ($repeatable === false) {
+								$data_to_save[$dst_rid][$dst_event_id][$dst_name] = $field_value;
+							} else {
+								// create an instance of destination project
+								$destProj = new \Project($this->projects['destination']['projectId']);
+								// check to see if destination project has repeating forms
+								$hasRepeatingForms = $destProj->hasRepeatingForms();
+								foreach($instances as $instance) {
+									$json_data = '{"record_id":"' . $dst_rid .
+										'","redcap_event_name":"'. $this->projects['destination']['event_details'][$dst_event_id]['unique_name'];
+									// if destination project has repeating form(s), add `redcap_repeat_instrument` field to json data
+									if ($hasRepeatingForms === true) {
+										$json_data = $json_data . '","redcap_repeat_instrument":"'. $form_name;
+									}
+									$json_data = $json_data .
+										'","redcap_repeat_instance":'. $instance .
+										',"' . $dst_name . '":"' . $field_value . '"}';
+									array_push($data_repeatable_to_save, json_decode($json_data));
+								}
+							}
+						}
+					}
+				}
+
+				$data_to_save[$dst_rid][$dst_event_id][$src_project['cross_match_status']] = $match_status;
+				if($match_status === 'partial') {
+					$data_to_save[$dst_rid][$dst_event_id][$src_project['cross_match_id']] = implode(" | ", $matched_ids);
+					$data_to_save[$dst_rid][$dst_event_id][$src_project['cross_match_number']] = implode(" | ", $matched_fields_number);
+					$data_to_save[$dst_rid][$dst_event_id][$src_project['cross_match_fields']] = implode(" | ", $matched_fields_names);
+				}
+				else {
+					$data_to_save[$dst_rid][$dst_event_id][$src_project['cross_match_id']] = ' ';
+					$data_to_save[$dst_rid][$dst_event_id][$src_project['cross_match_number']] = ' ';
+					$data_to_save[$dst_rid][$dst_event_id][$src_project['cross_match_fields']] = ' ';
 				}
 			}
 		}
 
-		if (!empty($resultData[$dst_rid])) {
-			$result = \REDCap::saveData('array', $resultData);
-			//return $result;
-            $returnarray['data-push'] = $result;
+
+		if (!empty($data_to_save[$dst_rid])) {
+			$result = \REDCap::saveData('array', $data_to_save);
+			return $result;
 		}
 
-        return $returnarray;
+		if (!empty($data_repeatable_to_save)) {
+			$repeatable_result = \REDCap::saveData('json', json_encode($data_repeatable_to_save), 'normal');
+			return $repeatable_result;
+		}
 	}
 
-    function processDataTransfer($currentData,$dst_rid,$src_project,$eid,$field_data,$src_match_field,$dest_match_field,$source_match_field_is_in_pipe_fields,$repeat_instance = "") {
-        // if this eid corresponds to a destination project event.. copy data to save to destination record
-        $src_event_name = $src_project['events'][$eid];
-        $dst_event_id = array_search($src_event_name, $this->projects['destination']['events'], true);
-        // skip this event if a matching event name wasn't found in the destination project
-        if ($dst_event_id === false) {
-            return $currentData;
-        }
+	function createNewRecords(){
+	    foreach ($this->projects['source'] as $p_index => $src_project) {
+	 		$to_create = $src_project['cross_non_matched_ids'];
+			$counter = 1;
+			$records = [];
+			foreach ($to_create as $value) {
+				$rec = array(
+					"study_id" => $counter,
+					"hp_pmi_id" => $value,
+					"created_by_cross_match_piping" => "true"
+				);
+				$counter = $counter + 1;
+				array_push($records, $rec);
+		    }
 
-        // skip this event if the event_id isn't valid (eid is only valid if it has the same name as the name of the event contains the form that contains the destination match field)
-        # Quick-Fix for PHP8 Support
-        if (in_array($eid, (array) $src_project['valid_match_event_ids']) === false) {
-            return $currentData;
-        }
-
-        // create an instance of destination project
-        $destProj = new \Project($this->projects['destination']['projectId']);
-
-        foreach ($field_data as $field_name => $field_value) {
-            // skip this field if it's the match field and match field isn't in the set of fields to be piped
-            if (
-                $field_name == $src_match_field
-                &&
-                !$source_match_field_is_in_pipe_fields
-            ) {
-                continue;
-            }
-
-            // get the destination project's name for this source pipe field
-            $pipe_field_index = array_search($field_name, $src_project['source_fields'], true);
-            $dst_name = $src_project['dest_fields'][$pipe_field_index];
-
-            // skip this field if the destination record's form status for the containing form is above the pipe limit
-            $form_name = $src_project['dest_forms_by_field_name'][$dst_name];
-
-            if (intval($this->formStatuses[$dst_rid][$dst_event_id][$form_name . '_complete']) > $this->pipe_on_status) {
-                continue;
-            }
-            // skip if this field isn't in an 'active' form
-            if (!empty($this->active_forms) && !in_array($form_name, $this->active_forms)) {
-                continue;
-            }
-
-            if (!empty($dst_name)) {
-                $currentData = $this->updateDestinationData($currentData,$destProj,$dst_name,$field_value,$dst_rid,$dst_event_id,$repeat_instance);
-            }
-        }
-
-        return $currentData;
-    }
-
-    function updateDestinationData($destData,\Project $destProject, $destFieldName, $srcFieldValue, $destRecord, $destEvent,$destRepeat = 1) {
-        $destMeta = $destProject->metadata;
-        $destEventForms = $destProject->eventsForms[$destEvent];
-
-        $destInstrument = $destMeta[$destFieldName]['form_name'];
-        $destRecordField = $destProject->table_pk;
-        $destInstrumentRepeats = $destProject->isRepeatingForm($destEvent, $destInstrument);
-        $destEventRepeats = $destProject->isRepeatingEvent($destEvent);
-
-        if (in_array($destInstrument,$destEventForms)) {
-            if ($destInstrumentRepeats) {
-                $destData[$destRecord][$destEvent][$destRecordField] = $destRecord;
-                //$destData[$destRecord][$destEvent]['redcap_repeat_instrument'] = "";
-                //$destData[$destRecord][$destEvent]['redcap_repeat_instance'] = $destRepeat;
-                $destData[$destRecord]['repeat_instances'][$destEvent][$destInstrument][$destRepeat][$destFieldName] = $srcFieldValue;
-            } elseif ($destEventRepeats) {
-                $destData[$destRecord][$destEvent][$destRecordField] = $destRecord;
-                //$destData[$destRecord][$destEvent]['redcap_repeat_instrument'] = "";
-                //$destData[$destRecord][$destEvent]['redcap_repeat_instance'] = $destRepeat;
-                $destData[$destRecord]['repeat_instances'][$destEvent][''][$destRepeat][$destFieldName] = $srcFieldValue;
-            } else {
-                $destData[$destRecord][$destEvent][$destFieldName] = $srcFieldValue;
-            }
-        }
-        return $destData;
+            $data = array(
+                'token' => 'E5DF60AC5329F6754057CDC32346D9F2',
+                'content' => 'record',
+                'action' => 'import',
+                'format' => 'json',
+                'type' => 'flat',
+                'overwriteBehavior' => 'normal',
+                'forceAutoNumber' => 'true',
+                'data' => '\'' . json_encode($records) . '\'',
+                'returnContent' => 'count',
+                'returnFormat' => 'json'
+            );
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, 'https://redcap-aou.sc-ctsi.org/api/');
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch, CURLOPT_VERBOSE, 0);
+            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+            curl_setopt($ch, CURLOPT_AUTOREFERER, true);
+            curl_setopt($ch, CURLOPT_MAXREDIRS, 10);
+            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
+            curl_setopt($ch, CURLOPT_FRESH_CONNECT, 1);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data, '', '&'));
+            $output = curl_exec($ch);
+            curl_close($ch);
+      	}
     }
 	
 	function getProjectRecordIDs($project_id, $filter_logic = null) {
@@ -1200,44 +1344,5 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 
 		return $rightsByPid;
 	}*/
-
-	/**
-	 * Copied from the EM framework.  Can be removed once redcap-version-min can be set to a version that includes this method.
-	 */
-	function escape($value){
-		$type = gettype($value);
-
-		/**
-		 * The unnecessary casting on these first few types exists solely to inform psalm and avoid warnings.
-		 */
-		if($type === 'boolean'){
-			return (bool) $value;
-		}
-		else if($type === 'integer'){
-			return (int) $value;
-		}
-		else if($type === 'double'){
-			return (float) $value;
-		}
-		else if($type === 'array'){
-			$newValue = [];
-			foreach($value as $key=>$subValue){
-				$key = $this->escape($key);
-				$subValue = $this->escape($subValue);
-				$newValue[$key] = $subValue;
-			}
-
-			return $newValue;
-		}
-		else if($type === 'NULL'){
-			return null;
-		}
-		else{
-			/**
-			* Handle strings, resources, and custom objects (via the __toString() method. 
-			* Apart from escaping, this produces that same behavior as if the $value was echoed or appended via the "." operator.
-			*/
-			return htmlspecialchars(''.$value, ENT_QUOTES);
-		}
-	}
 }
+
