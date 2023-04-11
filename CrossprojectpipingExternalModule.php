@@ -1,12 +1,12 @@
 <?php
-namespace Vanderbilt\CrossprojectpipingExternalModule;
+namespace Vanderbilt\CrossprojectpipingExternalModulePlus;
 
 use ExternalModules\AbstractExternalModule;
 use ExternalModules\ExternalModules;
 
 require_once dirname(__FILE__) . '/hooks_common.php';
 
-class CrossprojectpipingExternalModule extends AbstractExternalModule
+class CrossprojectpipingExternalModulePlus extends AbstractExternalModule
 {
 	public $pipingMode;
 	public $pipeOnStatus;
