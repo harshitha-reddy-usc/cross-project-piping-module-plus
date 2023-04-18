@@ -1,12 +1,12 @@
 <?php
-namespace Vanderbilt\CrossprojectpipingExternalModule;
+namespace Vanderbilt\CrossprojectpipingExternalModulePlus;
 
 use ExternalModules\AbstractExternalModule;
 use ExternalModules\ExternalModules;
 
 require_once dirname(__FILE__) . '/hooks_common.php';
 
-class CrossprojectpipingExternalModule extends AbstractExternalModule
+class CrossprojectpipingExternalModulePlus extends AbstractExternalModule
 {
 	public $pipingMode;
 	public $pipeOnStatus;
@@ -462,8 +462,8 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 
 				$(document).ready(function() {
 					<?php if($this->pipingMode == 1 && !$this->hideButton): ?>
-						$('#form table#questiontable>tbody').prepend('<tr style="border-top: 1px solid #DDDDDD;"><td style="text-align: center; padding: 6px;" colspan="2"><button id="ccpPipeData">Initiate Data Piping</button></td></tr>');
-						$('#ccpPipeData').click(function(evt){
+						$('#form table#questiontable>tbody').prepend('<tr style="border-top: 1px solid #DDDDDD;"><td style="text-align: center; padding: 6px;" colspan="2"><button id="ccpPipeDataPlus">Initiate Data Piping Plus</button></td></tr>');
+						$('#ccpPipeDataPlus').click(function(evt){
 							evt.preventDefault();
 							runCrossProjectPiping();
 						});
@@ -718,7 +718,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 									var tr = $('tr[sq_id='+field+']');
 									var id = lastNode.match(/\([^\s]+\)/);
 									// console.log("Setting "+field+" to "+data);
-									if (typeof(data) == 'object') {    // checkbox
+									if (typeof(data) == 'object') {	// checkbox
 										$.each(data, function( index, value ) {
 											var input = $('input:checkbox[code="'+index+'"]', tr);
 											if ($(input).length > 0) {
@@ -733,7 +733,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 												// $(input).change();
 											}
 										});
-									} else if (id) {    // checkbox
+									} else if (id) {	// checkbox
 										id = id[0].replace(/^\(/, "");
 										id = id.replace(/\)$/, "");
 										var input = $('input:checkbox[code="'+id+'"]', tr);
@@ -741,7 +741,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 											if (data == 1) {
 												// console.log("A Setting "+field+" to "+data);
 												$(input).prop('checked', true);
-											} else {    // data == 0
+											} else {	// data == 0
 												// console.log("B Setting "+field+" to "+data);
 												$(input).prop('checked', false);
 											}
@@ -849,8 +849,17 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 		$project_ids = $this->getProjectSetting('project-id');
 		$dest_match_fields = $this->getProjectSetting('field-match');
 		$source_match_fields = $this->getProjectSetting('field-match-source');
+		$dest_match_fields_secondary = $this->getProjectSetting('field-match-destination-secondary');
+		$source_match_fields_secondary = $this->getProjectSetting('field-match-source-secondary');
+		$number_secondary_matches = $this->getProjectSetting('number-secondary-matches');
 		$dest_fields = $this->getProjectSetting('data-destination-field');
 		$source_fields = $this->getProjectSetting('data-source-field');
+		$cross_match_status = $this->getProjectSetting('cross-match-status');
+		$cross_match_id = $this->getProjectSetting('cross-match-id');
+		$cross_match_number = $this->getProjectSetting('cross-match-number');
+		$cross_match_fields = $this->getProjectSetting('cross-match-fields');
+		$new_records_additions = $this->getProjectSetting('new-records-addition');
+		$record_addition_flag = $this->getProjectSetting('record-addition-flag');
 		
 		// fill $projects['source'] array with source project info arrays
 		foreach ($project_ids as $project_index => $pid) {
@@ -859,7 +868,16 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 				'source_match_field' => $source_match_fields[$project_index],
 				'dest_match_field' => $dest_match_fields[$project_index],
 				'dest_fields' => $dest_fields[$project_index],
+				'source_match_field_secondary' => $source_match_fields_secondary[$project_index],
+				'dest_match_field_secondary' => $dest_match_fields_secondary[$project_index],
+				'number_secondary_matches' => $number_secondary_matches[$project_index],
 				'source_fields' => $source_fields[$project_index],
+				'cross_match_status' => $cross_match_status[$project_index],
+				'cross_match_id' => $cross_match_id[$project_index],
+				'cross_match_number' => $cross_match_number[$project_index],
+				'cross_match_fields' => $cross_match_fields[$project_index],
+				'new_records_additions' => $new_records_additions[$project_index],
+				'record_addition_flag' => $record_addition_flag[$project_index],
 				'dest_forms_by_field_name' => []
 			];
 			
@@ -872,6 +890,12 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 				$matching_destination_field_name = $source_project['dest_fields'][$list_index];
 				if (empty($field_name)) {
 					$source_project['source_fields'][$list_index] = $matching_destination_field_name;
+				}
+
+				foreach ($source_project['source_match_field_secondary'] as $list_ind => $sec_field_name) {
+					if (empty($sec_field_name)) {
+						$source_project['source_match_field_secondary'][$list_ind] = $source_project['dest_match_field_secondary'][$list_ind];
+					}
 				}
 				
 				// add an entry to dest_forms_by_field_name for this source field
@@ -916,6 +940,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 		if (!empty($active_forms)) {
 			$projects['destination']['active_forms'] = $active_forms;
 		}
+
 		$projects['destination']['pipe_on_status'] = $this->getProjectSetting('pipe-on-status');
 		
 		// add event id/names to destination project from global Project instance ($Proj is the destination/host project)
@@ -973,7 +998,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 			$project_id = $project['project_id'];
 			
 			$match_field = $project['source_match_field'];
-			$fields = $project['source_fields'];
+			$fields = array_merge($project['source_fields'], $project['source_match_field_secondary']);
 			if (!in_array($match_field, $fields)) {
 				$fields[] = $match_field;
 			}
@@ -981,10 +1006,19 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 			$params = [
 				'project_id' => $project_id,
 				'return_format' => 'array',
-				'fields' => $fields,
-				'filterLogic' => "[$match_field] <> ''"
+				'fields' => $fields
+				#'filterLogic' => "[$match_field] <> ''"
 			];
 			$this->projects['source'][$project_index]['source_data'] = \REDCap::getData($params);
+
+			#store all the ids as non matched ids
+			$cross_non_matched_ids = [];
+			foreach ($this->projects['source'][$project_index]['source_data'] as $src_rid => $src_rec) {
+				foreach ($src_rec as $eid => $field_data) {
+					array_push($cross_non_matched_ids, $field_data[$match_field]);
+				}
+			}
+			$this->projects['source'][$project_index]['cross_non_matched_ids'] = $cross_non_matched_ids;
 		}
 	}
 	
@@ -998,7 +1032,10 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 		foreach ($this->projects['source'] as $project_index => $project) {
 			$match_field_names[] = $project['dest_match_field'];
 		}
-		$match_field_names = array_unique($match_field_names);
+
+		$record_identifier_field= \REDCap::getRecordIdField();
+		$this->projects['destination']['record_identifier_field'] = $record_identifier_field;
+		$match_field_names = array_merge([$record_identifier_field], $match_field_names, $project['dest_match_field_secondary']);
 		
 		$params = [
 			'project_id' => $this->projects['destination']['project_id'],
@@ -1019,6 +1056,15 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 		}
 		
 		$this->projects['destination']['records_match_fields'] = $data;
+
+		if (!empty($data)) {
+			// Get the last record identifier number
+			$last_record = end($data);
+			$last_record_identifier_number = $last_record[$record_identifier_field];
+			$this->projects['destination']['next_record_identifier_number'] = intval($last_record_identifier_number) + 1;
+		} else {
+			$this->projects['destination']['next_record_identifier_number'] = 1;
+		}
 	}
 	
 	function pipeToRecord($dst_rid) {
@@ -1052,6 +1098,14 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 			// is the source match field in the set of piped fields?
 			$src_match_field = $src_project['source_match_field'];
 			$source_match_field_is_in_pipe_fields = in_array($src_match_field, $src_project['source_fields'], true) !== false;
+
+			#partial match population fields
+			$match_status = '';
+			$matched_ids = [];
+			$matched_fields_number = [];
+			$matched_fields_names = [];
+
+
 			
 			// copy pipe values from source records whose match field value matches
 			foreach ($src_project['source_data'] as $src_rid => $src_rec) {
@@ -1089,10 +1143,50 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 								}
 							}
 						}
-						if ($equal === false) {
+						if ($equal === true) {
+							$repeatable = true;
+						}
+
+						$match_count = 0;
+						$partial = false;
+						$matched_fields = [];
+						if($equal === false && $match_status != 'exact') {
+							foreach($src_project['dest_match_field_secondary'] as $list_ind => $sec_field_name_dest ) {
+								$record_match_value_sec = $record_match_info[$sec_field_name_dest];
+								$sec_field_name_source = $src_project['source_match_field_secondary'][$list_ind];
+								if (empty($field_data[$sec_field_name_source]) || empty($record_match_value_sec)) {
+									continue;
+								}
+								if (strtolower($record_match_value_sec) == strtolower($field_data[$sec_field_name_source])) {
+									$match_count = $match_count + 1;
+									array_push($matched_fields, $sec_field_name_dest);
+								}
+							}
+							if ($match_count >= intval($src_project['number_secondary_matches'])) {
+								$partial = true;
+								if (($key = array_search($field_data[$src_match_field], $src_project['cross_non_matched_ids'])) !== false) {
+									$this->projects['source'][$p_index]['cross_non_matched_ids'][$key] = "IGNORE" . $this->projects['source'][$p_index]['cross_non_matched_ids'][$key];
+								}
+							}
+						}
+
+						if ($equal === false && $partial === false) {
 							continue;
 						}
-						$repeatable = true;
+
+						if($partial === true) {
+							$match_status = 'partial';
+							array_push($matched_ids, $field_data[$src_match_field]);
+							array_push($matched_fields_number, $match_count);
+							array_push($matched_fields_names, implode(",", $matched_fields));
+							continue;
+						}
+					}
+
+					$match_status = 'exact';
+					if (($key = array_search($field_data[$src_match_field], $src_project['cross_non_matched_ids'])) !== false)
+					{
+						$this->projects['source'][$p_index]['cross_non_matched_ids'][$key] = "IGNORE" . $this->projects['source'][$p_index]['cross_non_matched_ids'][$key];
 					}
 					
 					foreach ($field_data as $field_name => $field_value) {
@@ -1102,6 +1196,12 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 							&&
 							!$source_match_field_is_in_pipe_fields
 						) {
+							continue;
+						}
+
+						if (in_array($field_name, $src_project['source_match_field_secondary'], true) !== false
+							&&
+							in_array($field_name, $src_project['source_fields'], true) === false){
 							continue;
 						}
 
@@ -1145,6 +1245,21 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 						}
 					}
 				}
+
+				//Populate match related fields
+				if (!empty($src_project['cross_match_status'])) {
+					$data_to_save[$dst_rid][$dst_event_id][$src_project['cross_match_status']] = $match_status;
+				}
+				if (!empty($src_project['cross_match_id'])) {
+					$data_to_save[$dst_rid][$dst_event_id][$src_project['cross_match_id']] = ($match_status === 'partial') ? implode(" | ", $matched_ids) : ' ';
+				}
+				if (!empty($src_project['cross_match_number'])) {
+					$data_to_save[$dst_rid][$dst_event_id][$src_project['cross_match_number']] = ($match_status === 'partial') ? implode(" | ", $matched_fields_number) : ' ';
+				}
+				if (!empty($src_project['cross_match_fields'])) {
+					$data_to_save[$dst_rid][$dst_event_id][$src_project['cross_match_fields']] = ($match_status === 'partial') ? implode(" | ", $matched_fields_names) : ' ';
+				}
+
 			}
 		}
 		
@@ -1194,4 +1309,34 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 
 		return $rightsByPid;
 	}*/
+
+	function createNewDestinationRecords() {
+		$record_identifier = $this->projects['destination']['record_identifier_field'];
+		$counter = $this->projects['destination']['next_record_identifier_number'];
+		foreach ($this->projects['source'] as $p_index => $src_project) {
+			if ($src_project['new_records_additions'] !== "true" || empty($src_project['record_addition_flag'])) {
+				continue;
+			}
+	 		$to_create = $src_project['cross_non_matched_ids'];
+			$records = [];
+			foreach ($to_create as $value) {
+				if(strpos($value, "IGNORE") !== false){
+					continue;
+				}
+				$rec = array(
+					$record_identifier => $counter,
+					$src_project['dest_match_field'] => $value,
+					$src_project['record_addition_flag'] => "true"
+				);
+				$counter = $counter + 1;
+				array_push($records, $rec);
+			}
+			$result = \REDCap::saveData('json', json_encode($records));
+
+			if (!empty($result['errors'])) {
+				error_log("Cross Project Piping: Error Creating New Records:<br />\n". var_export($result['errors'], true));
+			}
+		}
+	}
+
 }

@@ -8,7 +8,7 @@ CrossProjectPipingModule.ajax_complete = function(data, status, xhr) {
 	$("button#pipe_all_records").attr('disabled', false);
 	
 	if (status == 'success' && data.responseJSON && data.responseJSON['success'] == true) {
-		//window.location.reload();
+		window.location.reload();
 	} else {
 		if (data.responseJSON && data.responseJSON['error']) {
 			alert(data.responseJSON['error']);
@@ -22,7 +22,7 @@ CrossProjectPipingModule.addButtonAfterJqueryLoaded = function() {
 	if (typeof($) != 'undefined') {
 		// wait 
 		$(function() {
-			$("form#dashboard-config + div").append("<button id='pipe_all_records' class='btn btn-xs btn-rcpurple fs13'><div class='cpp_pipe_all_loader'></div>Pipe All Records</button>");
+			$("form#dashboard-config + div").append("<button id='pipe_all_records' class='btn btn-xs btn-rcpurple fs13'><div class='cpp_pipe_all_loader'></div>Pipe All Records Plus</button>");
 			
 			$("body").on("click", "button#pipe_all_records", function(event) {
 				// show spinning loader icon and disabled pipe button

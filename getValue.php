@@ -1,6 +1,6 @@
 <?php
-	namespace Vanderbilt\CrossprojectpipingExternalModule;
-
+	namespace Vanderbilt\CrossprojectpipingExternalModulePlus;
+	
 	use ExternalModules\AbstractExternalModule;
 	use ExternalModules\ExternalModules;
 
@@ -10,7 +10,7 @@
 		\REDCap::allowProjects(array($_POST['otherpid'], $_POST['thispid']));
 	}
 
-	$thisjson = \REDCap::getData($_POST['thispid'], 'json', array($_POST['thisrecord']), array($_POST['thismatch']));
+	$thisjson = \REDCap::getData($_POST['thispid'], 'json', array($_POST['thisrecord']), array($_POST['thismatch'])); 
 	$thismatch = trim($_POST['thismatch']);
 	$thismatch = preg_replace("/^[\'\"]/", "", $thismatch);
 	$thismatch = preg_replace("/[\'\"]$/", "", $thismatch);
@@ -23,8 +23,6 @@
 	}
 
 	$matchSource = $_POST['matchsource'];
-	$repeat_instance = intval($_POST['thisinstance']);
-
 	if(empty($matchRecord)){
 		// Return without echo-ing any values.
 		return;
@@ -42,10 +40,8 @@
 		$recordId = key($filterData);
 	}
 
-	$data = \Records::getData($_POST['otherpid'], 'array', array($recordId));
-
+	$data = \REDCap::getData($_POST['otherpid'], 'array', array($recordId));
 	if(empty($data)) {
-
 		return;
 	}
 
@@ -87,25 +83,21 @@
 	}
 
 	$found = false;
-
 	foreach ($data as $record => $recData) {
 		$Proj = new \Project($_POST['otherpid']);
 		foreach ($logicItems as $field => $logicItem) {
 			if (\LogicTester::isValid($logicItem)) {
 				$result = \LogicTester::apply($logicItem, $recData, $Proj, true);
-
-				$fieldName = substr($logicItem, 1, -1);
-
 				if ($result || $result === "0" || $result === 0) {
 					// escape choice key/values
 					$insecure_choices = json_decode($_POST['choices'], true);
-
+					$choices;
 					foreach ($insecure_choices as $k1 => $v1) {
 						foreach ($v1 as $k2 => $v2) {
-							$choices[$k1][$k2] = $v2;
+							$choices[db_escape($k1)][db_escape($k2)] = db_escape($v2);
 						}
 					}
-
+					
 					if (isset($choices[$field])) {
 						if (isset($choices[$field][$result])) {
 							if ($_POST['getlabel'] != 0) {
@@ -119,22 +111,14 @@
 					} else {
 						$returnVal = $result;
 					}
-					echo $module->escape($returnVal);
+					echo $returnVal;
 					$found = true;
 					break;
-				} else if(!empty($recData[$Proj->firstEventId][$fieldName]) && is_array($recData[$Proj->firstEventId][$fieldName])) {
+				} else if(!empty($recData[$Proj->firstEventId][substr($logicItem, 1, -1)]) && is_array($recData[$Proj->firstEventId][substr($logicItem, 1, -1)])) {
 					header('Content-Type: application/json');
-					echo json_encode($module->escape($recData[$Proj->firstEventId][$fieldName]));
+					echo json_encode($recData[$Proj->firstEventId][substr($logicItem, 1, -1)]);
 					$found = true;
 					break;
-				}
-				elseif (isset($recData['repeat_instances'][$Proj->firstEventId][$Proj->metadata[$fieldName]['form_name']][$repeat_instance][$fieldName])) {
-					echo $module->escape($recData['repeat_instances'][$Proj->firstEventId][$Proj->metadata[$fieldName]['form_name']][$repeat_instance][$fieldName]);
-					$found = true;
-					break;
-				}
-				else {
-					//echo "Got a screw up on $fieldName";
 				}
 			}
 			if ($found) {

@@ -1,6 +1,6 @@
 
 
-# Cross Project Piping - External Module
+# Cross Project Piping Plus - External Module
 <h2 style='color: #33B9FF;'>Configure Cross Project Piping</h2>
 This module must be enabled on the DESTINATION project. Once enabled the configuration is done with in the
 external module tab on the project.
@@ -28,12 +28,49 @@ example if Project A records are subject_id but Project B records are record_id.
 
 ![This picture shows the Alternate Source Match Field setting](/docs/readme_img_4.png)
 
+**6. Secondary Unique Match Field:**
+This is for specifying destination project’s instrument’s fields whose values should be checked for match in case the unique match field’s values is not a match. For example if Project A records are date_of_birth but Project B records are dob.
+
+**7. Secondary Alternate Source Match Field:**
+This is for specifying source project’s instrument’s fields whose values should be checked for match in case the unique match field’s values is not a match. For example if Project A records are subject_id but Project B records are record_id.
+
+<span style='color: #ff0000;'>Note to add more secondary match fields select the + icon in the gray space to the right of Alternate Source Match Field:</span>
+
+![This picture shows the Secondary Unique Match Field and Secondary Alternate Source Match Field setting](/docs/readme_img_10.png)
+
+**8. Number of matches for a successful secondary match:**
+This is for specifying the minimum number of secondary fields that has to be matched for a valid partial match case.
+
+![This picture shows the fields to specify the minumum number of fields for successful secondary match ](/docs/readme_img_11.png)
+
+**9. Field to populate for updating Cross Project Match status:**
+ This is for specifying the field name that is added in the instrument, that stores the status of the match - whether it is exact(primary fields matched) or partial(minimum number of secondary field matched)
+
+**10. Field to populate for updating Cross Project Matched ID:**
+This is for specifying the field name that is added in the instrument, that stores the primary fields values of the source project’s records that was partially matched. 
+
+**11. Field to populate for updating Cross Project Match - number of fields matched:**
+This is for specifying the field name that is added in the instrument, that stores the number of successful partial matches corresponding to the ids that are present in the previous field.
+
+**12. Field to populate for updating Cross Project Match - fields matched:**
+This is for specifying the field name that is added in the instrument, that stores actual secondary match fields in the records that were successful match between source and a particular destination record.
+
+![This picture shows the fields necessary to populate Cross Project Match Status, Cross Project Matched IDs, Number of Fields Matched, Fields Matched ](/docs/readme_img_12.png)
+
+**13. Create new records in this project with missing Primary Match Field from Source project:**
+Set this field to true in order to create new records that is missing in the current project, but present in the source project. This will create a new record with Unique Source Field filled which can be used for further piping.
+
+**14. Field to populate for flagging if the record is created by Cross Project Piping module:**
+This is for specifying the field name that is added in the instrument, that contains value 'true' if the record the record was created by cross project piping module.
+
+![This picture shows the fields for setting creation of new records and field for marking the creation ](/docs/readme_img_13.png)
+
 <span style='color: #ff0000;'>Note all configurations can repeat, in the instance you need to pipe values from multiple projects into one. Simply select the + icon in the gray space at the top.</span>
 
 <span style='font-weight: 600; text-decoration: underline;'>Setting up your piped field.<span>
 1. Select the destination field from the drop down list.
 
-![This picture shows the Destinatino Field setting](/docs/readme_img_5.png)
+![This picture shows the Destinatinon Field setting](/docs/readme_img_5.png)
 
 2. You will only need to enter a value in the Source field if the variable name on the destination field is
 different from the source field.
@@ -64,7 +101,7 @@ The status can always be reverted to incomplete to utilize this function.</span>
 ![This picture shows the Piping Mode setting (with Piping Button selected)](/docs/readme_img_9.png)
 
 <span style='color: #ff0000; font-size: 1.25rem;'>Please note that if cross project piping is used there is a risk of overwriting data
-in an instrument. Any record saved with data on it whether piped or not will save on that record.</span>
+in an instrument. Any record saved with data on it weather piped or not will save on that record.</span>
 
 <h3 style='color: #33B9FF;'>Support for Repeating Instances</h3>
 This module supports repeating instances in the following way:

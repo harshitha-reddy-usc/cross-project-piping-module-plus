@@ -18,11 +18,9 @@ $verbose_failure_logging = $module->getProjectSetting("verbose-pipe-all-failure-
 $failures = 0;
 $successes = 0;
 $pipe_attempts = 0;
-$response = [];
 
 foreach ($module->projects['destination']['records_match_fields'] as $rid => $info) {
 	$save_result = $module->pipeToRecord($rid);
-    $response['projects'] = json_encode($save_result);
 	$pipe_attempts++;
 	# Quick-Fix for PHP8 Support
 	$ids = (array) $save_result['ids'];
@@ -31,21 +29,22 @@ foreach ($module->projects['destination']['records_match_fields'] as $rid => $in
 	} elseif (!empty($save_result['errors'])) {
 		$failures++;
 		if (!empty($verbose_failure_logging)) {
-			\REDCap::logEvent("Cross-Project Piping Module", "Verbose Pipe-All piping failure information for record $rid:\n" . implode("\n", $save_result['errors']));
+			\REDCap::logEvent("Cross-Project Piping Module Plus", "Verbose Pipe-All piping failure information for record $rid:\n" . implode($save_result, "\n"));
 		}
 	}
 }
+$module->createNewDestinationRecords();
 
 $no_change_records = $pipe_attempts - $successes - $failures;
 $changed_records = $pipe_attempts - $no_change_records;
 
-\REDCap::logEvent("Cross Project Piping: Pipe All Records",
+\REDCap::logEvent("Cross Project Piping Plus: Pipe All Records",
 	"Records piped: $pipe_attempts.
 	Successes: $successes.
 	Failures: $failures.
 	Changed / Unchanged records: $changed_records / $no_change_records");
 
-
+$response = [];
 if (empty($errors)) {
 	$response['success'] = true;
 } else {
