@@ -858,8 +858,15 @@ class CrossprojectpipingExternalModulePlus extends AbstractExternalModule
 		$project_ids = $this->getProjectSetting('project-id');
 		$dest_match_fields = $this->getProjectSetting('field-match');
 		$source_match_fields = $this->getProjectSetting('field-match-source');
+		$dest_match_fields_secondary = $this->getProjectSetting('field-match-destination-secondary');
+		$source_match_fields_secondary = $this->getProjectSetting('field-match-source-secondary');
+		$number_secondary_matches = $this->getProjectSetting('number-secondary-matches');
 		$dest_fields = $this->getProjectSetting('data-destination-field');
 		$source_fields = $this->getProjectSetting('data-source-field');
+		$cross_match_status = $this->getProjectSetting('cross-match-status');
+		$cross_match_id = $this->getProjectSetting('cross-match-id');
+		$cross_match_number = $this->getProjectSetting('cross-match-number');
+		$cross_match_fields = $this->getProjectSetting('cross-match-fields');
 		
 		// fill $projects['source'] array with source project info arrays
 		foreach ($project_ids as $project_index => $pid) {
@@ -868,7 +875,14 @@ class CrossprojectpipingExternalModulePlus extends AbstractExternalModule
 				'source_match_field' => $source_match_fields[$project_index],
 				'dest_match_field' => $dest_match_fields[$project_index],
 				'dest_fields' => $dest_fields[$project_index],
+				'source_match_field_secondary' => $source_match_fields_secondary[$project_index],
+				'dest_match_field_secondary' => $dest_match_fields_secondary[$project_index],
+				'number_secondary_matches' => $number_secondary_matches[$project_index],
 				'source_fields' => $source_fields[$project_index],
+				'cross_match_status' => $status[$cross_match_status],
+				'cross_match_id' => $status[$cross_match_id],
+				'cross_match_number' => $status[$cross_match_number],
+				'cross_match_fields' => $status[$cross_match_fields],
 				'dest_forms_by_field_name' => []
 			];
 			
@@ -883,6 +897,11 @@ class CrossprojectpipingExternalModulePlus extends AbstractExternalModule
 					$source_project['source_fields'][$list_index] = $matching_destination_field_name;
 				}
 				
+				foreach ($source_project['source_match_field_secondary'] as $list_ind => $sec_field_name) {
+					if (empty($sec_field_name)) {
+						$source_project['source_match_field_secondary'][$list_ind] = $source_project['dest_match_field_secondary'][$list_ind];
+					}
+				}
 				// add an entry to dest_forms_by_field_name for this source field
 				$actual_field_name = $source_project['dest_fields'][$list_index];
 				$source_project['dest_forms_by_field_name'][$actual_field_name] = $Proj->metadata[$matching_destination_field_name]['form_name'];
@@ -982,7 +1001,8 @@ class CrossprojectpipingExternalModulePlus extends AbstractExternalModule
 			$project_id = $project['project_id'];
 			
 			$match_field = $project['source_match_field'];
-			$fields = $project['source_fields'];
+			#$fields = $project['source_fields'];
+			$fields = array_merge($project['source_fields'], ['record_id'], $project['source_match_field_secondary']);
 			if (!in_array($match_field, $fields)) {
 				$fields[] = $match_field;
 			}
@@ -990,8 +1010,8 @@ class CrossprojectpipingExternalModulePlus extends AbstractExternalModule
 			$params = [
 				'project_id' => $project_id,
 				'return_format' => 'array',
-				'fields' => $fields,
-				'filterLogic' => "[$match_field] <> ''"
+				'fields' => $fields
+				#'filterLogic' => "[$match_field] <> ''"
 			];
 
 			$this->projects['source'][$project_index]['source_data'] = \REDCap::getData($params);
@@ -1008,7 +1028,8 @@ class CrossprojectpipingExternalModulePlus extends AbstractExternalModule
 		foreach ($this->projects['source'] as $project_index => $project) {
 			$match_field_names[] = $project['dest_match_field'];
 		}
-		$match_field_names = array_unique($match_field_names);
+		#$match_field_names = array_unique($match_field_names);
+		$match_field_names = array_unique($match_field_names + $project['dest_match_field_secondary']);
 		
 		$params = [
 			'project_id' => $this->projects['destination']['project_id'],
@@ -1052,6 +1073,7 @@ class CrossprojectpipingExternalModulePlus extends AbstractExternalModule
 		foreach ($this->projects['source'] as $p_index => $src_project) {
 			// get the destination match field name
 			$dest_match_field = $src_project['dest_match_field'];
+			$record_match_value = $record_match_info[$dest_match_field];
 
 			// is the source match field in the set of piped fields?
 			$src_match_field = $src_project['source_match_field'];
