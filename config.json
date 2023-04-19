@@ -1,7 +1,7 @@
 {
-	"name": "Cross-Project Piping Plus",
+	"name": "Cross-Project Piping",
 
-	"namespace": "Vanderbilt\\CrossprojectpipingExternalModulePlus",
+	"namespace": "Vanderbilt\\CrossprojectpipingExternalModule",
 
 	"description": "Cross-Project Piping pipes from one field in one project into another field in another project. The projects have to be MATCHED on a third field in both projects. Enable this module in the DESTINATION project and select appropriate fields in the configure panel.",
 
