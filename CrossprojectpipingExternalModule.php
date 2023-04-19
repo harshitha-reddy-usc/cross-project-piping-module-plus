@@ -1005,6 +1005,15 @@ class CrossprojectpipingExternalModulePlus extends AbstractExternalModule
 				#'filterLogic' => "[$match_field] <> ''"
 			];
 			$this->projects['source'][$project_index]['source_data'] = \REDCap::getData($params);
+
+			#store all the ids as non matched ids
+			$cross_non_matched_ids = [];
+			foreach ($this->projects['source'][$project_index]['source_data'] as $src_rid => $src_rec) {
+				foreach ($src_rec as $eid => $field_data) {
+					array_push($cross_non_matched_ids, $field_data[$match_field]);
+				}
+			}
+			$this->projects['source'][$project_index]['cross_non_matched_ids'] = $cross_non_matched_ids;
 		}
 	}
 	
@@ -1072,6 +1081,13 @@ class CrossprojectpipingExternalModulePlus extends AbstractExternalModule
 			// is the source match field in the set of piped fields?
 			$src_match_field = $src_project['source_match_field'];
 			$source_match_field_is_in_pipe_fields = in_array($src_match_field, $src_project['source_fields'], true) !== false;
+
+			#partial match population fields
+			$match_status = '';
+			$matched_ids = [];
+			$matched_fields_number = [];
+			$matched_fields_names = [];
+
 			
 			// copy pipe values from source records whose match field value matches
 			foreach ($src_project['source_data'] as $src_rid => $src_rec) {
@@ -1109,10 +1125,49 @@ class CrossprojectpipingExternalModulePlus extends AbstractExternalModule
 								}
 							}
 						}
-						if ($equal === false) {
+						if ($equal === true) {
+							$repeatable = true;
+						}
+
+						$match_count = 0;
+						$partial = false;
+						$matched_fields = [];
+						if($equal === false && $match_status != 'exact') {
+							foreach($src_project['dest_match_field_secondary'] as $list_ind => $sec_field_name_dest ) {
+								$record_match_value_sec = $record_match_info[$sec_field_name_dest];
+								$sec_field_name_source = $src_project['source_match_field_secondary'][$list_ind];
+								if (empty($field_data[$sec_field_name_source]) || empty($record_match_value_sec)) {
+									continue;
+								}
+								if (strtolower($record_match_value_sec) == strtolower($field_data[$sec_field_name_source])) {
+									$match_count = $match_count + 1;
+									array_push($matched_fields, $sec_field_name_dest);
+								}
+							}
+							if ($match_count >= intval($src_project['number_secondary_matches'])) {
+								$partial = true;
+								if (($key = array_search($field_data[$src_match_field], $src_project['cross_non_matched_ids'])) !== false) {
+									unset($src_project['cross_non_matched_ids'][$key]);
+                                }
+							}
+						}
+
+						if ($equal === false && $partial === false) {
 							continue;
 						}
-						$repeatable = true;
+
+						if($partial === true) {
+							$match_status = 'partial';
+							array_push($matched_ids, $field_data[$src_match_field]);
+							array_push($matched_fields_number, $match_count);
+							array_push($matched_fields_names, implode(",", $matched_fields));
+							continue;
+						}
+					}
+
+					$match_status = 'exact';
+					if (($key = array_search($field_data[$src_match_field], $src_project['cross_non_matched_ids'])) !== false) {
+						unset($src_project['cross_non_matched_ids'][$key]);
 					}
 					
 					foreach ($field_data as $field_name => $field_value) {
@@ -1122,6 +1177,12 @@ class CrossprojectpipingExternalModulePlus extends AbstractExternalModule
 							&&
 							!$source_match_field_is_in_pipe_fields
 						) {
+							continue;
+						}
+
+						if (in_array($field_name, $src_project['source_match_field_secondary'], true) !== false
+					        &&
+					        in_array($field_name, $src_project['source_fields'], true) === false){
 							continue;
 						}
 
@@ -1164,6 +1225,16 @@ class CrossprojectpipingExternalModulePlus extends AbstractExternalModule
 							}
 						}
 					}
+				}
+				$data_to_save[$dst_rid][$dst_event_id][$src_project['cross_match_status']] = $match_status;
+				if($match_status === 'partial') {
+					$data_to_save[$dst_rid][$dst_event_id][$src_project['cross_match_id']] = implode(" | ", $matched_ids);
+					$data_to_save[$dst_rid][$dst_event_id][$src_project['cross_match_number']] = implode(" | ", $matched_fields_number);
+					$data_to_save[$dst_rid][$dst_event_id][$src_project['cross_match_fields']] = implode(" | ", $matched_fields_names);
+				} else {
+					$data_to_save[$dst_rid][$dst_event_id][$src_project['cross_match_id']] = ' ';
+					$data_to_save[$dst_rid][$dst_event_id][$src_project['cross_match_number']] = ' ';
+					$data_to_save[$dst_rid][$dst_event_id][$src_project['cross_match_fields']] = ' ';
 				}
 			}
 		}
