@@ -1107,8 +1107,6 @@ class CrossprojectpipingExternalModulePlus extends AbstractExternalModule
 					if (in_array($eid, (array) $src_project['valid_match_event_ids']) === false) {
 						continue;
 					}
-
-					$data_to_save[$dst_rid][$dst_event_id][$src_project['hp_notes']] = 'some text';
 					
 					// if the source record doesn't match the destination record, it may be a repeatable record
 					// if it's a repeatable record, check if any of the instances contains the destination field
