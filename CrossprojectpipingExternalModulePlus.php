@@ -1,12 +1,12 @@
 <?php
-namespace Vanderbilt\CrossprojectpipingExternalModule;
+namespace Vanderbilt\CrossprojectpipingExternalModulePlus;
 
 use ExternalModules\AbstractExternalModule;
 use ExternalModules\ExternalModules;
 
 require_once dirname(__FILE__) . '/hooks_common.php';
 
-class CrossprojectpipingExternalModule extends AbstractExternalModule
+class CrossprojectpipingExternalModulePlus extends AbstractExternalModule
 {
 	public $pipingMode;
 	public $pipeOnStatus;
@@ -849,8 +849,15 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 		$project_ids = $this->getProjectSetting('project-id');
 		$dest_match_fields = $this->getProjectSetting('field-match');
 		$source_match_fields = $this->getProjectSetting('field-match-source');
+		$dest_match_fields_secondary = $this->getProjectSetting('field-match-destination-secondary');
+		$source_match_fields_secondary = $this->getProjectSetting('field-match-source-secondary');
+		$number_secondary_matches = $this->getProjectSetting('number-secondary-matches');
 		$dest_fields = $this->getProjectSetting('data-destination-field');
 		$source_fields = $this->getProjectSetting('data-source-field');
+		$cross_match_status = $this->getProjectSetting('cross-match-status');
+		$cross_match_id = $this->getProjectSetting('cross-match-id');
+		$cross_match_number = $this->getProjectSetting('cross-match-number');
+		$cross_match_fields = $this->getProjectSetting('cross-match-fields');
 		
 		// fill $projects['source'] array with source project info arrays
 		foreach ($project_ids as $project_index => $pid) {
@@ -859,7 +866,14 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 				'source_match_field' => $source_match_fields[$project_index],
 				'dest_match_field' => $dest_match_fields[$project_index],
 				'dest_fields' => $dest_fields[$project_index],
+				'source_match_field_secondary' => $source_match_fields_secondary[$project_index],
+				'dest_match_field_secondary' => $dest_match_fields_secondary[$project_index],
+				'number_secondary_matches' => $number_secondary_matches[$project_index],
 				'source_fields' => $source_fields[$project_index],
+				'cross_match_status' => $status[$cross_match_status],
+				'cross_match_id' => $status[$cross_match_id],
+				'cross_match_number' => $status[$cross_match_number],
+				'cross_match_fields' => $status[$cross_match_fields],
 				'dest_forms_by_field_name' => []
 			];
 			
@@ -872,6 +886,12 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 				$matching_destination_field_name = $source_project['dest_fields'][$list_index];
 				if (empty($field_name)) {
 					$source_project['source_fields'][$list_index] = $matching_destination_field_name;
+				}
+
+				foreach ($source_project['source_match_field_secondary'] as $list_ind => $sec_field_name) {
+					if (empty($sec_field_name)) {
+						$source_project['source_match_field_secondary'][$list_ind] = $source_project['dest_match_field_secondary'][$list_ind];
+					}
 				}
 				
 				// add an entry to dest_forms_by_field_name for this source field
@@ -973,7 +993,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 			$project_id = $project['project_id'];
 			
 			$match_field = $project['source_match_field'];
-			$fields = $project['source_fields'];
+			$fields = array_merge($project['source_fields'], $project['source_match_field_secondary']);
 			if (!in_array($match_field, $fields)) {
 				$fields[] = $match_field;
 			}
@@ -981,10 +1001,19 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 			$params = [
 				'project_id' => $project_id,
 				'return_format' => 'array',
-				'fields' => $fields,
-				'filterLogic' => "[$match_field] <> ''"
+				'fields' => $fields
+				#'filterLogic' => "[$match_field] <> ''"
 			];
 			$this->projects['source'][$project_index]['source_data'] = \REDCap::getData($params);
+
+			#store all the ids as non matched ids
+			$cross_non_matched_ids = [];
+			foreach ($this->projects['source'][$project_index]['source_data'] as $src_rid => $src_rec) {
+				foreach ($src_rec as $eid => $field_data) {
+					array_push($cross_non_matched_ids, $field_data[$match_field]);
+				}
+			}
+			$this->projects['source'][$project_index]['cross_non_matched_ids'] = $cross_non_matched_ids;
 		}
 	}
 	
@@ -998,7 +1027,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 		foreach ($this->projects['source'] as $project_index => $project) {
 			$match_field_names[] = $project['dest_match_field'];
 		}
-		$match_field_names = array_unique($match_field_names);
+		$match_field_names = array_unique($match_field_names + $project['dest_match_field_secondary']);
 		
 		$params = [
 			'project_id' => $this->projects['destination']['project_id'],
@@ -1052,6 +1081,13 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 			// is the source match field in the set of piped fields?
 			$src_match_field = $src_project['source_match_field'];
 			$source_match_field_is_in_pipe_fields = in_array($src_match_field, $src_project['source_fields'], true) !== false;
+
+			#partial match population fields
+			$match_status = '';
+			$matched_ids = [];
+			$matched_fields_number = [];
+			$matched_fields_names = [];
+
 			
 			// copy pipe values from source records whose match field value matches
 			foreach ($src_project['source_data'] as $src_rid => $src_rec) {
@@ -1089,10 +1125,49 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 								}
 							}
 						}
-						if ($equal === false) {
+						if ($equal === true) {
+							$repeatable = true;
+						}
+
+						$match_count = 0;
+						$partial = false;
+						$matched_fields = [];
+						if($equal === false && $match_status != 'exact') {
+							foreach($src_project['dest_match_field_secondary'] as $list_ind => $sec_field_name_dest ) {
+								$record_match_value_sec = $record_match_info[$sec_field_name_dest];
+								$sec_field_name_source = $src_project['source_match_field_secondary'][$list_ind];
+								if (empty($field_data[$sec_field_name_source]) || empty($record_match_value_sec)) {
+									continue;
+								}
+								if (strtolower($record_match_value_sec) == strtolower($field_data[$sec_field_name_source])) {
+									$match_count = $match_count + 1;
+									array_push($matched_fields, $sec_field_name_dest);
+								}
+							}
+							if ($match_count >= intval($src_project['number_secondary_matches'])) {
+								$partial = true;
+								if (($key = array_search($field_data[$src_match_field], $src_project['cross_non_matched_ids'])) !== false) {
+									unset($src_project['cross_non_matched_ids'][$key]);
+                                }
+							}
+						}
+
+						if ($equal === false && $partial === false) {
 							continue;
 						}
-						$repeatable = true;
+
+						if($partial === true) {
+							$match_status = 'partial';
+							array_push($matched_ids, $field_data[$src_match_field]);
+							array_push($matched_fields_number, $match_count);
+							array_push($matched_fields_names, implode(",", $matched_fields));
+							continue;
+						}
+					}
+
+					$match_status = 'exact';
+					if (($key = array_search($field_data[$src_match_field], $src_project['cross_non_matched_ids'])) !== false) {
+						unset($src_project['cross_non_matched_ids'][$key]);
 					}
 					
 					foreach ($field_data as $field_name => $field_value) {
@@ -1102,6 +1177,12 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 							&&
 							!$source_match_field_is_in_pipe_fields
 						) {
+							continue;
+						}
+
+						if (in_array($field_name, $src_project['source_match_field_secondary'], true) !== false
+					        &&
+					        in_array($field_name, $src_project['source_fields'], true) === false){
 							continue;
 						}
 
@@ -1144,6 +1225,16 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 							}
 						}
 					}
+				}
+				$data_to_save[$dst_rid][$dst_event_id][$src_project['cross_match_status']] = $match_status;
+				if($match_status === 'partial') {
+					$data_to_save[$dst_rid][$dst_event_id][$src_project['cross_match_id']] = implode(" | ", $matched_ids);
+					$data_to_save[$dst_rid][$dst_event_id][$src_project['cross_match_number']] = implode(" | ", $matched_fields_number);
+					$data_to_save[$dst_rid][$dst_event_id][$src_project['cross_match_fields']] = implode(" | ", $matched_fields_names);
+				} else {
+					$data_to_save[$dst_rid][$dst_event_id][$src_project['cross_match_id']] = ' ';
+					$data_to_save[$dst_rid][$dst_event_id][$src_project['cross_match_number']] = ' ';
+					$data_to_save[$dst_rid][$dst_event_id][$src_project['cross_match_fields']] = ' ';
 				}
 			}
 		}
@@ -1194,4 +1285,50 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 
 		return $rightsByPid;
 	}*/
+
+	function createNewRecords(){
+	    foreach ($this->projects['source'] as $p_index => $src_project) {
+	 		$to_create = $src_project['cross_non_matched_ids'];
+			$counter = 1;
+			$records = [];
+			foreach ($to_create as $value) {
+				$rec = array(
+					"study_id" => $counter,
+					"hp_pmi_id" => $value,
+					"created_by_cross_match_piping" => "true"
+				);
+				$counter = $counter + 1;
+				array_push($records, $rec);
+		    }
+
+            $data = array(
+                'token' => 'E5DF60AC5329F6754057CDC32346D9F2',
+                'content' => 'record',
+                'action' => 'import',
+                'format' => 'json',
+                'type' => 'flat',
+                'overwriteBehavior' => 'normal',
+                'forceAutoNumber' => 'true',
+                'data' => '\'' . json_encode($records) . '\'',
+                'returnContent' => 'count',
+                'returnFormat' => 'json'
+            );
+
+            $url = $this->getUrl("updateTestMetadata.php",true);
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $url);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch, CURLOPT_VERBOSE, 0);
+            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+            curl_setopt($ch, CURLOPT_AUTOREFERER, true);
+            curl_setopt($ch, CURLOPT_MAXREDIRS, 10);
+            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
+            curl_setopt($ch, CURLOPT_FRESH_CONNECT, 1);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data, '', '&'));
+            $output = curl_exec($ch);
+            curl_close($ch);
+      	}
+    }
+
 }

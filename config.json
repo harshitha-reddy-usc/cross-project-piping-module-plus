@@ -1,7 +1,7 @@
 {
-	"name": "Cross-Project Piping",
+	"name": "Cross-Project Piping Plus",
 
-	"namespace": "Vanderbilt\\CrossprojectpipingExternalModule",
+	"namespace": "Vanderbilt\\CrossprojectpipingExternalModulePlus",
 
 	"description": "Cross-Project Piping pipes from one field in one project into another field in another project. The projects have to be MATCHED on a third field in both projects. Enable this module in the DESTINATION project and select appropriate fields in the configure panel.",
 
@@ -69,6 +69,64 @@
 					"required": false,
 					"type": "text",
 					"repeatable": false
+				},
+				{
+				    "key": "field-match-secondary",
+				    "name": "Secondary Field Match: Match these fields in case field-match is not matched",
+				    "required": false,
+				    "type": "sub_settings",
+				    "repeatable": true,
+				    "sub_settings": [
+				        {
+				            "key": "field-match-destination-secondary",
+				            "name": "Secondary Match Field Destination",
+				            "required": false,
+				            "type": "field-list",
+				            "repeatable": false
+				        },
+				        {
+				            "key": "field-match-source-secondary",
+				            "name": "Secondary Match Field Source",
+				            "required": false,
+				            "type": "text",
+				            "repeatable": false
+				        }
+				    ]
+				 },
+				 {
+				 "key": "number-secondary-matches",
+				 "name": "Number of matches for a successful secondary match",
+				 "required": false,
+				 "type": "text",
+				 "repeatable": false
+				},
+				{
+				 "key": "cross-match-status",
+				 "name": "Field to populate for updating Cross Project Match status",
+				 "required": false,
+				 "type": "field-list",
+				 "repeatable": false
+				},
+				{
+				 "key": "cross-match-id",
+				 "name": "Field to populate for updating Cross Project Matched ID",
+				 "required": false,
+				 "type": "field-list",
+				 "repeatable": false
+				},
+				{
+				 "key": "cross-match-number",
+				 "name": "Field to populate for updating Cross Project Match - number of fields matched",
+				 "required": false,
+				 "type": "field-list",
+				 "repeatable": false
+				},
+				{
+				 "key": "cross-match-fields",
+				 "name": "Field to populate for updating Cross Project Match - fields matched",
+				 "required": false,
+				 "type": "field-list",
+				 "repeatable": false
 				},
 				{
 					"key": "project-fields",

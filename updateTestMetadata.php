@@ -1,5 +1,5 @@
 <?php
-namespace Vanderbilt\CrossprojectpipingExternalModule;
+namespace Vanderbilt\CrossprojectpipingExternalModulePlus;
 
 use ExternalModules\AbstractExternalModule;
 use ExternalModules\ExternalModules;
