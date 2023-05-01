@@ -28,6 +28,29 @@ example if Project A records are subject_id but Project B records are record_id.
 
 ![This picture shows the Alternate Source Match Field setting](/docs/readme_img_4.png)
 
+**6. Secondary Unique Match Field:**
+This is for specifying destination project’s instrument’s fields whose values should be checked for match in case the unique match field’s values is not a match. For example if Project A records are date_of_birth but Project B records are dob.
+![This picture shows the Secondary Unique Match Field setting](/docs/readme_img_5.png)
+
+**7. Secondary Alternate Source Match Field:**
+This is for specifying source project’s instrument’s fields whose values should be checked for match in case the unique match field’s values is not a match. For example if Project A records are subject_id but Project B records are record_id.
+![This picture shows the  Secondary Alternate Source Match Field setting](/docs/readme_img_6.png)
+
+**8. Number of matches for a successful secondary match:**
+This is for specifying the minimum number of secondary fields that has to be matched for a valid partial match case.
+
+**9. Field to populate for updating Cross Project Match status:**
+ This is for specifying the field name that is added in the instrument, that stores the status of the match - whether it is exact(primary fields matched) or partial(minimum number of secondary field matched)
+
+**10. Field to populate for updating Cross Project Matched ID:**
+This is for specifying the field name that is added in the instrument, that stores the primary fields values of the source project’s records that was partially matched. 
+
+**11. Field to populate for updating Cross Project Match - number of fields matched:**
+This is for specifying the field name that is added in the instrument, that stores the number of successful partial matches corresponding to the ids that are present in the previous field.
+
+**12. Field to populate for updating Cross Project Match - fields matched:**
+This is for specifying the field name that is added in the instrument, that stores actual secondary match fields in the records that were successful match between source and a particular destination record.
+
 <span style='color: #ff0000;'>Note all configurations can repeat, in the instance you need to pipe values from multiple projects into one. Simply select the + icon in the gray space at the top.</span>
 
 <span style='font-weight: 600; text-decoration: underline;'>Setting up your piped field.<span>
