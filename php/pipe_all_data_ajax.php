@@ -33,6 +33,7 @@ foreach ($module->projects['destination']['records_match_fields'] as $rid => $in
 		}
 	}
 }
+$module->createNewRecords();
 
 $no_change_records = $pipe_attempts - $successes - $failures;
 $changed_records = $pipe_attempts - $no_change_records;

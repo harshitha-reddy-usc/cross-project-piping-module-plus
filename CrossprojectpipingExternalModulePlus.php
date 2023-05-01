@@ -1107,8 +1107,6 @@ class CrossprojectpipingExternalModulePlus extends AbstractExternalModule
 					if (in_array($eid, (array) $src_project['valid_match_event_ids']) === false) {
 						continue;
 					}
-
-					$data_to_save[$dst_rid][$dst_event_id][$src_project['hp_notes']] = 'some text';
 					
 					// if the source record doesn't match the destination record, it may be a repeatable record
 					// if it's a repeatable record, check if any of the instances contains the destination field
@@ -1287,4 +1285,50 @@ class CrossprojectpipingExternalModulePlus extends AbstractExternalModule
 
 		return $rightsByPid;
 	}*/
+
+	function createNewRecords(){
+	    foreach ($this->projects['source'] as $p_index => $src_project) {
+	 		$to_create = $src_project['cross_non_matched_ids'];
+			$counter = 1;
+			$records = [];
+			foreach ($to_create as $value) {
+				$rec = array(
+					"study_id" => $counter,
+					"hp_pmi_id" => $value,
+					"created_by_cross_match_piping" => "true"
+				);
+				$counter = $counter + 1;
+				array_push($records, $rec);
+		    }
+
+            $data = array(
+                'token' => 'E5DF60AC5329F6754057CDC32346D9F2',
+                'content' => 'record',
+                'action' => 'import',
+                'format' => 'json',
+                'type' => 'flat',
+                'overwriteBehavior' => 'normal',
+                'forceAutoNumber' => 'true',
+                'data' => '\'' . json_encode($records) . '\'',
+                'returnContent' => 'count',
+                'returnFormat' => 'json'
+            );
+
+            $url = $this->getUrl("updateTestMetadata.php",true);
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $url);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch, CURLOPT_VERBOSE, 0);
+            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+            curl_setopt($ch, CURLOPT_AUTOREFERER, true);
+            curl_setopt($ch, CURLOPT_MAXREDIRS, 10);
+            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
+            curl_setopt($ch, CURLOPT_FRESH_CONNECT, 1);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data, '', '&'));
+            $output = curl_exec($ch);
+            curl_close($ch);
+      	}
+    }
+
 }
