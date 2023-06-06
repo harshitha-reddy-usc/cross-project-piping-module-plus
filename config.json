@@ -1,15 +1,14 @@
 {
-	"name": "Cross-Project Piping Plus",
+	"name": "Sync Records Across Projects",
 
 	"namespace": "Vanderbilt\\CrossprojectpipingExternalModulePlus",
 
-	"description": "Cross-Project Piping pipes from one field in one project into another field in another project. The projects have to be MATCHED on a third field in both projects. Enable this module in the DESTINATION project and select appropriate fields in the configure panel.",
-
+	"description": "Sync Records Across Projects pipes fields in one project into fields of another project if there is an EXACT MATCH on a third field in both projects. The module also provides details of matches in case of PARTIAL MATCH on secondary set of fields in both projects. Enable this module in the DESTINATION project and select appropriate fields in the configure panel.",
 	"authors": [
 		{
-			"name": "DataCore",
-			"email": "datacore@vumc.org",
-			"institution": "Vanderbilt University Medical Center"
+			"name": "DPPHS",
+			"email": "harshith@usc.edu",
+			"institution": "USC - Keck School of Medicine"
 		}
 	],
 

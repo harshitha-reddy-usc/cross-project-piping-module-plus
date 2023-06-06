@@ -60,9 +60,9 @@ class CrossprojectpipingExternalModulePlus extends AbstractExternalModule
 		$destinationFields = $this->getProjectSetting('data-destination-field',$project_id);
 		$sourceFields = $this->getProjectSetting('data-source-field',$project_id);
 
-		error_log("Cross Project Piping: Piped<br /><br />\n\n".var_export($pipedProjects,true));
-		error_log("Cross Project Piping: Destination<br /><br />\n\n".var_export($destinationFields,true));
-		error_log("Cross Project Piping: Source<br /><br />\n\n".var_export($sourceFields,true));
+		error_log("Sync Records Across Projects: Piped<br /><br />\n\n".var_export($pipedProjects,true));
+		error_log("Sync Records Across Projects: Destination<br /><br />\n\n".var_export($destinationFields,true));
+		error_log("Sync Records Across Projects: Source<br /><br />\n\n".var_export($sourceFields,true));
 
 		foreach($pipedProjects as $projectKey => $thisProject) {
 			## List of fields for this project that are already confirmed
@@ -80,7 +80,7 @@ class CrossprojectpipingExternalModulePlus extends AbstractExternalModule
 
 			$userRights = $userRights[$thisProject][USERID];
 
-			error_log("Cross Project Piping: User Rights : $isSuperUser<br /><br />\n\n".var_export($userRights,true));
+			error_log("Sync Records Across Projects: User Rights : $isSuperUser<br /><br />\n\n".var_export($userRights,true));
 			if($isSuperUser) {
 
 			}
@@ -99,13 +99,13 @@ class CrossprojectpipingExternalModulePlus extends AbstractExternalModule
 		## It's not been tested thoroughly enough to leave in
 		return;
 
-		error_log("Enabling Cross Project Piping");
+		error_log("Enabling Sync Records Across Projects");
 		$this->setupTestProjects();
 	}
 
 	private function setupTestProjects() {
-		$parentProject = $this->createOrWipeTestProject("test_project_1","Cross Project Piping Test - Parent Project");
-		$pipingProject = $this->createOrWipeTestProject('test_project_2',"Cross Project Piping Test - Receiving Project");
+		$parentProject = $this->createOrWipeTestProject("test_project_1","Sync Records Across Projects Test - Parent Project");
+		$pipingProject = $this->createOrWipeTestProject('test_project_2',"Sync Records Across Projects Test - Receiving Project");
 
 		$url = $this->getUrl("updateTestMetadata.php",true);
 
@@ -125,7 +125,7 @@ class CrossprojectpipingExternalModulePlus extends AbstractExternalModule
 			curl_close($ch);
 
 			if($output != "success") {
-				error_log("Cross Project Piping: Error Enabling Parent:<br />\n".$output);
+				error_log("Sync Records Across Projects: Error Enabling Parent:<br />\n".$output);
 			}
 		}
 
@@ -145,7 +145,7 @@ class CrossprojectpipingExternalModulePlus extends AbstractExternalModule
 			curl_close($ch);
 
 			if($output != "success") {
-				error_log("Cross Project Piping: Error Enabling Output:<br />\n".$output);
+				error_log("Sync Records Across Projects: Error Enabling Output:<br />\n".$output);
 			}
 		}
 	}
@@ -163,7 +163,7 @@ class CrossprojectpipingExternalModulePlus extends AbstractExternalModule
 			]);
 
 			if(!$apiToken) {
-				error_log("Cross Project Piping: Error Generating Parent Project Token");
+				error_log("Sync Records Across Projects: Error Generating Parent Project Token");
 				return "";
 			}
 
@@ -175,7 +175,7 @@ class CrossprojectpipingExternalModulePlus extends AbstractExternalModule
 			$projectId = db_result($q,0,'project_id');
 
 			if($e = db_error()) {
-				error_log("Cross Project Piping: Error Enabling: $sql <br /><br />\n\n".var_export($e,true));
+				error_log("Sync Records Across Projects: Error Enabling: $sql <br /><br />\n\n".var_export($e,true));
 			}
 
 			## Error occurred if this is empty
@@ -192,7 +192,7 @@ class CrossprojectpipingExternalModulePlus extends AbstractExternalModule
 			$q = $this->query($sql);
 
 			if($e = db_error()) {
-				error_log("Cross Project Piping: Error Enabling: $sql <br /><br />\n\n".var_export($e,true));
+				error_log("Sync Records Across Projects: Error Enabling: $sql <br /><br />\n\n".var_export($e,true));
 				return "";
 			}
 
@@ -216,7 +216,7 @@ class CrossprojectpipingExternalModulePlus extends AbstractExternalModule
 
 			## If errors on setting metadata
 			if(count($metaDataResults[1]) > 0) {
-				error_log("Cross Project Piping: Error Setting Metadata ".var_export($metaDataResults[1],true));
+				error_log("Sync Records Across Projects: Error Setting Metadata ".var_export($metaDataResults[1],true));
 				$this->query("ROLLBACK");
 				return;
 			}
@@ -234,7 +234,7 @@ class CrossprojectpipingExternalModulePlus extends AbstractExternalModule
 				## If save data successful
 				if(count($result['errors']) > 0) {
 					$this->query("ROLLBACK");
-					error_log("Cross Project Piping: Error Enabling: ".var_export($result['errors'],true));
+					error_log("Sync Records Across Projects: Error Enabling: ".var_export($result['errors'],true));
 					return;
 				}
 			}
@@ -655,7 +655,7 @@ class CrossprojectpipingExternalModulePlus extends AbstractExternalModule
 						})
 
 						if(testOutput.length > 0){
-							simpleDialog(testOutput, 'Cross Project Piping Module - Test Failures', null, 1100)
+							simpleDialog(testOutput, 'Sync Records Across Projects Module - Test Failures', null, 1100)
 						}
 					}
 
@@ -990,7 +990,7 @@ class CrossprojectpipingExternalModulePlus extends AbstractExternalModule
 	
 	function getSourceProjectsData() {
 		if (gettype($this->projects['source']) == 'Array') {
-			throw new \Exception("The Cross Project Piping module expected \$module->projects['source'] to be an array before calling pipeToRecord()");
+			throw new \Exception("The Sync Records Across Projects module expected \$module->projects['source'] to be an array before calling pipeToRecord()");
 		}
 		
 		// fetch pipe and match data for all records in each source project
@@ -1024,7 +1024,7 @@ class CrossprojectpipingExternalModulePlus extends AbstractExternalModule
 	
 	function getDestinationProjectData() {
 		if (gettype($this->projects) == 'Array') {
-			throw new \Exception("The Cross Project Piping module expected \$module->projects to be an array before calling pipeToRecord()");
+			throw new \Exception("The Sync Records Across Projects module expected \$module->projects to be an array before calling pipeToRecord()");
 		}
 		
 		// get all destination match field names
@@ -1069,7 +1069,7 @@ class CrossprojectpipingExternalModulePlus extends AbstractExternalModule
 	
 	function pipeToRecord($dst_rid) {
 		if (gettype($this->projects) == 'Array') {
-			throw new \Exception("The Cross Project Piping module expected \$module->projects to be an array before calling pipeToRecord()");
+			throw new \Exception("The Sync Records Across Projects module expected \$module->projects to be an array before calling pipeToRecord()");
 		}
 		
 		// return early if this record has all empty destination match field values
@@ -1334,7 +1334,7 @@ class CrossprojectpipingExternalModulePlus extends AbstractExternalModule
 			$result = \REDCap::saveData('json', json_encode($records));
 
 			if (!empty($result['errors'])) {
-				error_log("Cross Project Piping: Error Creating New Records:<br />\n". var_export($result['errors'], true));
+				error_log("Sync Records Across Projects: Error Creating New Records:<br />\n". var_export($result['errors'], true));
 			}
 		}
 	}

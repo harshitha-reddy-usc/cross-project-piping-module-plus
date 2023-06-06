@@ -29,7 +29,7 @@ foreach ($module->projects['destination']['records_match_fields'] as $rid => $in
 	} elseif (!empty($save_result['errors'])) {
 		$failures++;
 		if (!empty($verbose_failure_logging)) {
-			\REDCap::logEvent("Cross-Project Piping Module Plus", "Verbose Pipe-All piping failure information for record $rid:\n" . implode($save_result, "\n"));
+			\REDCap::logEvent("Sync Records Across Projects", "Verbose Pipe-All piping failure information for record $rid:\n" . implode($save_result, "\n"));
 		}
 	}
 }
@@ -38,7 +38,7 @@ $module->createNewDestinationRecords();
 $no_change_records = $pipe_attempts - $successes - $failures;
 $changed_records = $pipe_attempts - $no_change_records;
 
-\REDCap::logEvent("Cross Project Piping Plus: Pipe All Records",
+\REDCap::logEvent("Sync Records Across Projects: Pipe All Records",
 	"Records piped: $pipe_attempts.
 	Successes: $successes.
 	Failures: $failures.

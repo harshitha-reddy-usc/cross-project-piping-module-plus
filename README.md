@@ -1,7 +1,8 @@
 
 
-# Cross Project Piping Plus - External Module
-<h2 style='color: #33B9FF;'>Configure Cross Project Piping</h2>
+# Sync Records Across Projects - External Module
+<h2 style='color: #33B9FF;'>Configure Sync Records Across Projects</h2>
+This module is based on Cross Project Piping Module 1.4.17. Cross Project Piping Module does piping based on matching single field whereas this module compares primary field for exact match and group of secondary fields for partial matches.
 This module must be enabled on the DESTINATION project. Once enabled the configuration is done with in the
 external module tab on the project.
 
@@ -60,8 +61,8 @@ This is for specifying the field name that is added in the instrument, that stor
 **13. Create new records in this project with missing Primary Match Field from Source project:**
 Set this field to true in order to create new records that is missing in the current project, but present in the source project. This will create a new record with Unique Source Field filled which can be used for further piping.
 
-**14. Field to populate for flagging if the record is created by Cross Project Piping module:**
-This is for specifying the field name that is added in the instrument, that contains value 'true' if the record the record was created by cross project piping module.
+**14. Field to populate for flagging if the record is created by Sync Records Across Projects module:**
+This is for specifying the field name that is added in the instrument, that contains value 'true' if the record the record was created by Sync Records Across Projects module.
 
 ![This picture shows the fields for setting creation of new records and field for marking the creation ](/docs/readme_img_13.png)
 
@@ -100,7 +101,7 @@ The status can always be reverted to incomplete to utilize this function.</span>
 
 ![This picture shows the Piping Mode setting (with Piping Button selected)](/docs/readme_img_9.png)
 
-<span style='color: #ff0000; font-size: 1.25rem;'>Please note that if cross project piping is used there is a risk of overwriting data
+<span style='color: #ff0000; font-size: 1.25rem;'>Please note that if Sync Records Across Projects is used there is a risk of overwriting data
 in an instrument. Any record saved with data on it weather piped or not will save on that record.</span>
 
 <h3 style='color: #33B9FF;'>Support for Repeating Instances</h3>
@@ -110,4 +111,4 @@ This module supports repeating instances in the following way:
 The module cannot, however, support configurations that require the 'Alternate Source Match Field' or 'Source Field' settings to point to fields that exist in repeating instruments.
 
 ### Note: Field Embedding
-The Cross-Project Piping module may not work correctly when interacting with embedded fields.
+The Sync Records Across Projects module may not work correctly when interacting with embedded fields.

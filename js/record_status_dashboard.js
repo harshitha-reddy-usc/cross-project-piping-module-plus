@@ -13,7 +13,7 @@ CrossProjectPipingModule.ajax_complete = function(data, status, xhr) {
 		if (data.responseJSON && data.responseJSON['error']) {
 			alert(data.responseJSON['error']);
 		} else {
-			alert("The Cross Project Piping module failed to get a response for your action. Please contact a REDCap administrator or the author of this module.");
+			alert("The Sync Records Across Projects module failed to get a response for your action. Please contact a REDCap administrator or the author of this module.");
 		}
 	}
 }
