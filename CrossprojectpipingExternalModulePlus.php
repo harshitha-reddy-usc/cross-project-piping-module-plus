@@ -462,7 +462,7 @@ class CrossprojectpipingExternalModulePlus extends AbstractExternalModule
 
 				$(document).ready(function() {
 					<?php if($this->pipingMode == 1 && !$this->hideButton): ?>
-						$('#form table#questiontable>tbody').prepend('<tr style="border-top: 1px solid #DDDDDD;"><td style="text-align: center; padding: 6px;" colspan="2"><button id="ccpPipeDataPlus">Initiate Data Piping Plus</button></td></tr>');
+						$('#form table#questiontable>tbody').prepend('<tr style="border-top: 1px solid #DDDDDD;"><td style="text-align: center; padding: 6px;" colspan="2"><button id="ccpPipeDataPlus">Sync Records</button></td></tr>');
 						$('#ccpPipeDataPlus').click(function(evt){
 							evt.preventDefault();
 							runCrossProjectPiping();
@@ -1015,7 +1015,9 @@ class CrossprojectpipingExternalModulePlus extends AbstractExternalModule
 			$cross_non_matched_ids = [];
 			foreach ($this->projects['source'][$project_index]['source_data'] as $src_rid => $src_rec) {
 				foreach ($src_rec as $eid => $field_data) {
-					array_push($cross_non_matched_ids, $field_data[$match_field]);
+					if(!empty($field_data[$match_field])) {
+						array_push($cross_non_matched_ids, $field_data[$match_field]);
+					}
 				}
 			}
 			$this->projects['source'][$project_index]['cross_non_matched_ids'] = $cross_non_matched_ids;

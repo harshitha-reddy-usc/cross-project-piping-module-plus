@@ -22,7 +22,7 @@ CrossProjectPipingModule.addButtonAfterJqueryLoaded = function() {
 	if (typeof($) != 'undefined') {
 		// wait 
 		$(function() {
-			$("form#dashboard-config + div").append("<button id='pipe_all_records' class='btn btn-xs btn-rcpurple fs13'><div class='cpp_pipe_all_loader'></div>Pipe All Records Plus</button>");
+			$("form#dashboard-config + div").append("<button id='pipe_all_records' class='btn btn-xs btn-rcpurple fs13'><div class='cpp_pipe_all_loader'></div>Sync Records Across Projects</button>");
 			
 			$("body").on("click", "button#pipe_all_records", function(event) {
 				// show spinning loader icon and disabled pipe button
