@@ -988,42 +988,7 @@ class CrossprojectpipingExternalModulePlus extends AbstractExternalModule
 		return $data;
 	}
 	
-	function getSourceProjectsData() {
-		if (gettype($this->projects['source']) == 'Array') {
-			throw new \Exception("The Sync Records Across Projects module expected \$module->projects['source'] to be an array before calling pipeToRecord()");
-		}
-		
-		// fetch pipe and match data for all records in each source project
-		foreach ($this->projects['source'] as $project_index => $project) {
-			$project_id = $project['project_id'];
-			
-			$match_field = $project['source_match_field'];
-			$fields = array_merge($project['source_fields'], $project['source_match_field_secondary']);
-			if (!in_array($match_field, $fields)) {
-				$fields[] = $match_field;
-			}
-			
-			$params = [
-				'project_id' => $project_id,
-				'return_format' => 'array',
-				'fields' => $fields
-				#'filterLogic' => "[$match_field] <> ''"
-			];
-			$this->projects['source'][$project_index]['source_data'] = \REDCap::getData($params);
 
-			#store all the ids as non matched ids
-			$cross_non_matched_ids = [];
-			foreach ($this->projects['source'][$project_index]['source_data'] as $src_rid => $src_rec) {
-				foreach ($src_rec as $eid => $field_data) {
-					if(!empty($field_data[$match_field])) {
-						array_push($cross_non_matched_ids, $field_data[$match_field]);
-					}
-				}
-			}
-			$this->projects['source'][$project_index]['cross_non_matched_ids'] = $cross_non_matched_ids;
-		}
-	}
-	
 	function getDestinationProjectData() {
 		if (gettype($this->projects) == 'Array') {
 			throw new \Exception("The Sync Records Across Projects module expected \$module->projects to be an array before calling pipeToRecord()");
@@ -1068,7 +1033,57 @@ class CrossprojectpipingExternalModulePlus extends AbstractExternalModule
 			$this->projects['destination']['next_record_identifier_number'] = 1;
 		}
 	}
+
 	
+	function getSourceProjectsData() {
+		if (gettype($this->projects['source']) == 'Array') {
+			throw new \Exception("The Sync Records Across Projects module expected \$module->projects['source'] to be an array before calling pipeToRecord()");
+		}
+
+		// fetch pipe and match data for all records in each source project
+		foreach ($this->projects['source'] as $project_index => $project) {
+			$project_id = $project['project_id'];
+
+			$match_field = $project['source_match_field'];
+			$fields = array_merge($project['source_fields'], $project['source_match_field_secondary']);
+			if (!in_array($match_field, $fields)) {
+				$fields[] = $match_field;
+			}
+
+			$params = [
+				'project_id' => $project_id,
+				'return_format' => 'array',
+				'fields' => $fields
+				#'filterLogic' => "[$match_field] <> ''"
+			];
+			$this->projects['source'][$project_index]['source_data'] = \REDCap::getData($params);
+
+			#store all the ids as non matched ids
+			$cross_non_matched_ids = [];
+			foreach ($this->projects['source'][$project_index]['source_data'] as $src_rid => $src_rec) {
+				foreach ($src_rec as $eid => $field_data) {
+					if(!empty($field_data[$match_field])) {
+						array_push($cross_non_matched_ids, $field_data[$match_field]);
+					}
+				}
+			}
+
+			//get all destination primary field values
+			$all_dest_match_fields = [];
+			$dest_match_field = $project['dest_match_field'];
+			foreach($this->projects['destination']['records_match_fields'] as $dest_record) {
+			    $dest_match_field_value = $dest_record[$dest_match_field];
+				if (!empty($dest_match_field_value)) {
+					array_push($all_dest_match_fields, $dest_match_field_value);
+				}
+			}
+
+			$src_cross_non_matched_ids = array_diff($cross_non_matched_ids, $all_dest_match_fields);
+			$this->projects['source'][$project_index]['cross_non_matched_ids'] = $src_cross_non_matched_ids;
+		}
+	}
+
+
 	function pipeToRecord($dst_rid) {
 		if (gettype($this->projects) == 'Array') {
 			throw new \Exception("The Sync Records Across Projects module expected \$module->projects to be an array before calling pipeToRecord()");
@@ -1085,6 +1100,12 @@ class CrossprojectpipingExternalModulePlus extends AbstractExternalModule
 			"$dst_rid" => []
 		];
 		$data_repeatable_to_save = [];
+
+		#partial match population fields
+		$match_status = ' ';
+		$matched_ids = [];
+		$matched_fields_number = [];
+		$matched_fields_names = [];
 		
 		// for every source project:
 		foreach ($this->projects['source'] as $p_index => $src_project) {
@@ -1096,22 +1117,15 @@ class CrossprojectpipingExternalModulePlus extends AbstractExternalModule
 			if (empty($record_match_value)) {
 				$record_match_value = $record_match_info;
 			}
-			
+
 			// is the source match field in the set of piped fields?
 			$src_match_field = $src_project['source_match_field'];
 			$source_match_field_is_in_pipe_fields = in_array($src_match_field, $src_project['source_fields'], true) !== false;
-
-			#partial match population fields
-			$match_status = '';
-			$matched_ids = [];
-			$matched_fields_number = [];
-			$matched_fields_names = [];
-
-
 			
 			// copy pipe values from source records whose match field value matches
 			foreach ($src_project['source_data'] as $src_rid => $src_rec) {
 				// iterate over each event in the source record, add/overwite data for pipe fields along the way
+				$secondary_data_dest = array_filter(array_intersect_key($record_match_info, array_flip($src_project['dest_match_field_secondary'])));
 				foreach ($src_rec as $eid => $field_data) {
 					// if this eid corresponds to a destination project event.. copy data to save to destination record
 					$src_event_name = $src_project['events'][$eid];
@@ -1145,25 +1159,20 @@ class CrossprojectpipingExternalModulePlus extends AbstractExternalModule
 								}
 							}
 						}
+
 						if ($equal === true) {
 							$repeatable = true;
 						}
 
 						$match_count = 0;
 						$partial = false;
-						$matched_fields = [];
 						if($equal === false && $match_status != 'exact') {
-							foreach($src_project['dest_match_field_secondary'] as $list_ind => $sec_field_name_dest ) {
-								$record_match_value_sec = $record_match_info[$sec_field_name_dest];
-								$sec_field_name_source = $src_project['source_match_field_secondary'][$list_ind];
-								if (empty($field_data[$sec_field_name_source]) || empty($record_match_value_sec)) {
-									continue;
-								}
-								if (strtolower($record_match_value_sec) == strtolower($field_data[$sec_field_name_source])) {
-									$match_count = $match_count + 1;
-									array_push($matched_fields, $sec_field_name_dest);
-								}
-							}
+							$secondary_data_source = array_filter(array_intersect_key($field_data, array_flip($src_project['source_match_field_secondary'])));
+							$matched_values = array_uintersect($secondary_data_source, $secondary_data_dest, 'strcasecmp');
+							$matched_keys = array_keys($matched_values);
+							$match_count = count($matched_keys);
+
+
 							if ($match_count >= intval($src_project['number_secondary_matches'])) {
 								$partial = true;
 								if (($key = array_search($field_data[$src_match_field], $src_project['cross_non_matched_ids'])) !== false) {
@@ -1180,7 +1189,7 @@ class CrossprojectpipingExternalModulePlus extends AbstractExternalModule
 							$match_status = 'partial';
 							array_push($matched_ids, $field_data[$src_match_field]);
 							array_push($matched_fields_number, $match_count);
-							array_push($matched_fields_names, implode(",", $matched_fields));
+							array_push($matched_fields_names, implode(",", $matched_keys));
 							continue;
 						}
 					}
@@ -1265,15 +1274,11 @@ class CrossprojectpipingExternalModulePlus extends AbstractExternalModule
 			}
 		}
 		
-		if (!empty($data_to_save[$dst_rid])) {
-			$result = \REDCap::saveData('array', $data_to_save);
-			return $result;
-		}
-
 		if (!empty($data_repeatable_to_save)) {
 			$repeatable_result = \REDCap::saveData('json', json_encode($data_repeatable_to_save), 'normal');
-			return $repeatable_result;
 		}
+
+		return $data_to_save;
 	}
 	
 	function getProjectRecordIDs($project_id, $filter_logic = null) {

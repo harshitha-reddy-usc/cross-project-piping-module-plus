@@ -3,8 +3,8 @@ header('Content-Type: application/json');
 
 // get information about configured source projects
 $module->projects = $module->getProjects();
-$module->getSourceProjectsData();
 $module->getDestinationProjectData();
+$module->getSourceProjectsData();
 
 // prepare the information necessary to implement active form filtering and form status filtering (as configured in module)
 $module->active_forms = $module->getProjectSetting('active-forms');
@@ -15,21 +15,55 @@ $module->pipe_on_status = $module->getProjectSetting('pipe-on-status');
 $module->formStatuses = $module->getFormStatusAllRecords($module->active_forms);
 $verbose_failure_logging = $module->getProjectSetting("verbose-pipe-all-failure-logging");
 
+$record_match_fields = $module->projects['destination']['records_match_fields'];
+
+if (!empty($module->getProjectSetting("record-begin"))) {
+	$start_record_num = ($module->getProjectSetting("record-begin"))[0];
+}
+if (!empty($module->getProjectSetting("record-end"))) {
+	$end_record_num = ($module->getProjectSetting("record-end"))[0];
+}
+
+if(!is_numeric($start_record_num) or intval($start_record_num) > count($record_match_fields)) {
+	$start_record_num = 0;
+} else {
+	$start_record_num = intval($start_record_num);
+}
+
+if(!is_numeric($end_record_num) or intval($end_record_num) > count($record_match_fields) or intval($end_record_num) < intval($start_record_num)) {
+	$end_record_num = count($record_match_fields);
+} else {
+	$end_record_num = intval($end_record_num);
+}
+
 $failures = 0;
 $successes = 0;
 $pipe_attempts = 0;
 
-foreach ($module->projects['destination']['records_match_fields'] as $rid => $info) {
-	$save_result = $module->pipeToRecord($rid);
+
+$data_to_save = [];
+foreach ($record_match_fields as $rid => $info) {
+	if ($rid >= $start_record_num && $rid <= $end_record_num) {
+		$data =  $module->pipeToRecord($rid);
+		foreach($data as $recordid => $value) {
+			$data_to_save["$recordid"] = $value;
+		}
+    }
+}
+
+$batch_size = 1000;
+$batches = array_chunk($data_to_save, $batch_size);
+foreach ($batches as $batch) {
+	$save_result = \REDCap::saveData('array', $batch);
 	$pipe_attempts++;
 	# Quick-Fix for PHP8 Support
 	$ids = (array) $save_result['ids'];
-	if (reset($ids) == $rid) {
+	if (!empty($ids)) {
 		$successes++;
 	} elseif (!empty($save_result['errors'])) {
 		$failures++;
 		if (!empty($verbose_failure_logging)) {
-			\REDCap::logEvent("Sync Records Across Projects", "Verbose Pipe-All piping failure information for record $rid:\n" . implode($save_result, "\n"));
+			\REDCap::logEvent("Sync Records Across Projects", "Verbose Pipe-All piping failure information\n" . implode($save_result, "\n"));
 		}
 	}
 }
