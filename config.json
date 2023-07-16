@@ -176,20 +176,6 @@
 			]
 		},
 		{
-			"key": "record-begin",
-			"name": "Starting record number from which piping begins(optional - omitting this will take first record as the start)",
-			"required": false,
-			"type": "text",
-			"repeatable": false
-		},
-		{
-			"key": "record-end",
-			"name": "Ending record number to which piping ends(optional - omitting this will take last record as the end)",
-			"required": false,
-			"type": "text",
-			"repeatable": false
-		},
-		{
 			"key": "active-forms",
 			"name": "Active Form(s): Limit piping to only these forms",
 			"required": false,

@@ -17,25 +17,6 @@ $verbose_failure_logging = $module->getProjectSetting("verbose-pipe-all-failure-
 
 $record_match_fields = $module->projects['destination']['records_match_fields'];
 
-if (!empty($module->getProjectSetting("record-begin"))) {
-	$start_record_num = ($module->getProjectSetting("record-begin"))[0];
-}
-if (!empty($module->getProjectSetting("record-end"))) {
-	$end_record_num = ($module->getProjectSetting("record-end"))[0];
-}
-
-if(!is_numeric($start_record_num) or intval($start_record_num) > count($record_match_fields)) {
-	$start_record_num = 0;
-} else {
-	$start_record_num = intval($start_record_num);
-}
-
-if(!is_numeric($end_record_num) or intval($end_record_num) > count($record_match_fields) or intval($end_record_num) < intval($start_record_num)) {
-	$end_record_num = count($record_match_fields);
-} else {
-	$end_record_num = intval($end_record_num);
-}
-
 $failures = 0;
 $successes = 0;
 $pipe_attempts = 0;
@@ -43,12 +24,10 @@ $pipe_attempts = 0;
 
 $data_to_save = [];
 foreach ($record_match_fields as $rid => $info) {
-	if ($rid >= $start_record_num && $rid <= $end_record_num) {
-		$data =  $module->pipeToRecord($rid);
-		foreach($data as $recordid => $value) {
-			$data_to_save["$recordid"] = $value;
-		}
-    }
+	$data =  $module->pipeToRecord($rid);
+	foreach($data as $recordid => $value) {
+		$data_to_save["$recordid"] = $value;
+	}
 }
 
 $batch_size = 1000;
