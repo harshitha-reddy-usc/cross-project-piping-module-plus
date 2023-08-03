@@ -1,6 +1,7 @@
 CrossProjectPipingModulePlus = {};
 
 CrossProjectPipingModulePlus.ajax_endpoint = "AJAX_ENDPOINT";
+CrossProjectPipingModulePlus.initial_ajax_endpoint = "INITIAL_AJAX";
 
 CrossProjectPipingModulePlus.ajax_complete = function(data, status, xhr) {
 	console.log("ajax completed", {data: data, status: status, xhr: xhr});
@@ -28,12 +29,40 @@ CrossProjectPipingModulePlus.addButtonAfterJqueryLoaded = function() {
 				// show spinning loader icon and disabled pipe button
 				$(".cpp_pipe_all_loader_plus").css('display', 'inline-block');
 				$("button#pipe_all_records_plus").attr('disabled', true);
-				
-				// send ajax request to pipe_all_records_plus endpoint
+
 				$.get({
-					url: CrossProjectPipingModulePlus.ajax_endpoint,
-					complete: CrossProjectPipingModulePlus.ajax_complete,
+					url: CrossProjectPipingModulePlus.initial_ajax_endpoint,
+					success: function() {
+						CrossProjectPipingModulePlus.totalRecords = data.responseJSON['total_records'];
+					}
 				});
+
+				var startIndex = 1;
+				var batchSize = 10000;
+				var endIndex = Math.min(startIndex + batchSize, CrossProjectPipingModulePlus.totalRecords);
+				var status = "success";
+				function makeAjaxCall() {
+					if (endIndex <= CrossProjectPipingModulePlus.totalRecords && status === "success") {
+						// send ajax request to pipe_all_records_plus endpoint
+						$.get({
+							url: CrossProjectPipingModulePlus.ajax_endpoint,
+							data: {
+								start_index: startIndex,
+								end_Index: endIndex
+							},
+							success: function(response) {
+								startIndex = endIndex + 1;
+								endIndex = Math.min(startIndex + batchSize, CrossProjectPipingModulePlus.totalRecords);
+								makeAjaxCall(); // Recursive call to the function
+							},
+							error: function(jqXHR, textStatus, errorThrown) {
+								console.error("Error:", errorThrown);
+								status = "failure";
+							},
+							complete: CrossProjectPipingModulePlus.ajax_complete
+						});
+					}
+				}
 			});
 		});
 	} else {

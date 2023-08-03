@@ -28,9 +28,11 @@ class CrossprojectpipingExternalModulePlus extends AbstractExternalModule
 		if ($user_is_at_record_status_dashboard && $pipe_all_records_button_configured) {
 			// add 'Pipe All Records' button to record status dashboard screen (should appear next to the '+Add New Record' button
 			$pipe_all_records_ajax_url = $this->getUrl('php/pipe_all_data_ajax.php');
+			$get_total_records_url = $this->getUrl('php/get_total_records_ajax.php');
 			$css_url = $this->getUrl('css/pipe_all_data_ajax.css');
 			$javascript_file_contents = file_get_contents($this->getModulePath() . 'js/record_status_dashboard.js');
 			$javascript_file_contents = str_replace("AJAX_ENDPOINT", $pipe_all_records_ajax_url, $javascript_file_contents);
+			$javascript_file_contents = str_replace("INITIAL_AJAX", $get_total_records_url, $javascript_file_contents);
 			
 			echo "<script type='text/javascript'>$javascript_file_contents</script>";
 			echo "<link rel='stylesheet' href='$css_url'>";
