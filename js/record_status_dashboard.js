@@ -34,39 +34,34 @@ CrossProjectPipingModulePlus.addButtonAfterJqueryLoaded = function() {
 					url: CrossProjectPipingModulePlus.initial_ajax_endpoint,
 					async: false,
 					success: function(data) {
-						console.log(data);
 						CrossProjectPipingModulePlus.totalRecords = data['total_records'];
 					}
 				});
 
-				console.log(CrossProjectPipingModulePlus.totalRecords);
-				var startIndex = 1;
+				var startIndex = 0;
 				var batchSize = 10000;
 				var endIndex = Math.min(startIndex + batchSize, CrossProjectPipingModulePlus.totalRecords);
 				var status = "success";
 				function makeAjaxCall() {
-					console.log("here1");
 					if (startIndex <= endIndex && endIndex <= CrossProjectPipingModulePlus.totalRecords && status === "success") {
-						// send ajax request to pipe_all_records_plus endpoint
-						console.log("here2");
+						// send ajax request to pipe_all_records_plus endpoint;
 						$.get({
 							url: CrossProjectPipingModulePlus.ajax_endpoint,
-							async: false,
+							//async: false,
 							data: {
 								start_index: startIndex,
 								end_index: endIndex
 							},
-							complete: function(data, status, xhr) {
-								console.log("response " + data);
-							//	startIndex = endIndex + 1;
-							//	endIndex = Math.min(startIndex + batchSize, CrossProjectPipingModulePlus.totalRecords);
-							//	makeAjaxCall(); // Recursive call to the function
-							}
-							//error: function(response) {
-							//	console.error("Error:", response);
-							//	status = "failure";
-							//},
-							//complete: CrossProjectPipingModulePlus.ajax_complete
+							success: function(data) {
+								startIndex = endIndex + 1;
+								endIndex = Math.min(startIndex + batchSize, CrossProjectPipingModulePlus.totalRecords);
+								makeAjaxCall(); // Recursive call to the function
+							},
+							error: function(jqXHR, textStatus, errorThrown) {
+								console.log("Error:", errorThrown);
+								status = "failure";
+							},
+							complete: CrossProjectPipingModulePlus.ajax_complete
 						});
 					}
 				}
