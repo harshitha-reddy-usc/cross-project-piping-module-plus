@@ -2,6 +2,7 @@
 header('Content-Type: application/json');
 
 // get information about configured source projects
+session_start();
 $module->projects = $module->getProjects();
 $module->getDestinationProjectData();
 $module->getSourceProjectsData();
@@ -18,4 +19,5 @@ $verbose_failure_logging = $module->getProjectSetting("verbose-pipe-all-failure-
 $record_match_fields = $module->projects['destination']['records_match_fields'];
 $response['total_records'] = count($record_match_fields);
 
+$_SESSION['module'] = serialize($module);
 echo json_encode($response);

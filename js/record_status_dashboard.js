@@ -7,7 +7,7 @@ CrossProjectPipingModulePlus.ajax_complete = function(data, status, xhr) {
 	console.log("ajax completed", {data: data, status: status, xhr: xhr});
 	$(".cpp_pipe_all_loader_plus").css('display', 'none');
 	$("button#pipe_all_records_plus").attr('disabled', false);
-	
+
 	if (status == 'success' && data.responseJSON && data.responseJSON['success'] == true) {
 		window.location.reload();
 	} else {
@@ -21,10 +21,10 @@ CrossProjectPipingModulePlus.ajax_complete = function(data, status, xhr) {
 
 CrossProjectPipingModulePlus.addButtonAfterJqueryLoaded = function() {
 	if (typeof($) != 'undefined') {
-		// wait 
+		// wait
 		$(function() {
 			$("form#dashboard-config + div").append("<button id='pipe_all_records_plus' class='btn btn-xs btn-rcpurple fs13'><div class='cpp_pipe_all_loader_plus'></div>Sync Records Across Projects</button>");
-			
+
 			$("body").on("click", "button#pipe_all_records_plus", function(event) {
 				// show spinning loader icon and disabled pipe button
 				$(".cpp_pipe_all_loader_plus").css('display', 'inline-block');
@@ -32,37 +32,45 @@ CrossProjectPipingModulePlus.addButtonAfterJqueryLoaded = function() {
 
 				$.get({
 					url: CrossProjectPipingModulePlus.initial_ajax_endpoint,
-					success: function() {
-						CrossProjectPipingModulePlus.totalRecords = data.responseJSON['total_records'];
+					async: false,
+					success: function(data) {
+						console.log(data);
+						CrossProjectPipingModulePlus.totalRecords = data['total_records'];
 					}
 				});
 
+				console.log(CrossProjectPipingModulePlus.totalRecords);
 				var startIndex = 1;
 				var batchSize = 10000;
 				var endIndex = Math.min(startIndex + batchSize, CrossProjectPipingModulePlus.totalRecords);
 				var status = "success";
 				function makeAjaxCall() {
-					if (endIndex <= CrossProjectPipingModulePlus.totalRecords && status === "success") {
+					console.log("here1");
+					if (startIndex <= endIndex && endIndex <= CrossProjectPipingModulePlus.totalRecords && status === "success") {
 						// send ajax request to pipe_all_records_plus endpoint
+						console.log("here2");
 						$.get({
 							url: CrossProjectPipingModulePlus.ajax_endpoint,
+							async: false,
 							data: {
 								start_index: startIndex,
-								end_Index: endIndex
+								end_index: endIndex
 							},
-							success: function(response) {
-								startIndex = endIndex + 1;
-								endIndex = Math.min(startIndex + batchSize, CrossProjectPipingModulePlus.totalRecords);
-								makeAjaxCall(); // Recursive call to the function
-							},
-							error: function(jqXHR, textStatus, errorThrown) {
-								console.error("Error:", errorThrown);
-								status = "failure";
-							},
-							complete: CrossProjectPipingModulePlus.ajax_complete
+							complete: function(data, status, xhr) {
+								console.log("response " + data);
+							//	startIndex = endIndex + 1;
+							//	endIndex = Math.min(startIndex + batchSize, CrossProjectPipingModulePlus.totalRecords);
+							//	makeAjaxCall(); // Recursive call to the function
+							}
+							//error: function(response) {
+							//	console.error("Error:", response);
+							//	status = "failure";
+							//},
+							//complete: CrossProjectPipingModulePlus.ajax_complete
 						});
 					}
 				}
+				makeAjaxCall();
 			});
 		});
 	} else {
