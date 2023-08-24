@@ -12,8 +12,11 @@ $pipe_attempts = 0;
 $data_to_save = [];
 $start_index = intval($_GET['start_index']);
 $end_index = intval($_GET['end_index']);
+$record_match_fields = $module->projects['destination']['records_match_fields'];
+$record_match_keys = array_keys($record_match_fields);
+$records_ids = array_slice($record_match_keys, $start_index, $end_index - $start_index + 1);
 
-for ($rid = $start_index; $rid <= $end_index; $rid++) {
+foreach ($records_ids as $val => $rid) {
 	$data =  $module->pipeToRecord($rid);
 	foreach($data as $recordid => $value) {
 		$data_to_save["$recordid"] = $value;
@@ -21,7 +24,7 @@ for ($rid = $start_index; $rid <= $end_index; $rid++) {
 }
 
 $batch_size = 1000;
-$batches = array_chunk($data_to_save, $batch_size);
+$batches = array_chunk($data_to_save, $batch_size, true);
 foreach ($batches as $batch) {
 	$save_result = \REDCap::saveData('array', $batch);
 	$pipe_attempts++;
