@@ -19,5 +19,23 @@ $verbose_failure_logging = $module->getProjectSetting("verbose-pipe-all-failure-
 $record_match_fields = $module->projects['destination']['records_match_fields'];
 $response['total_records'] = count($record_match_fields);
 
-$_SESSION['module'] = serialize($module);
+$record_match_fields = $module->projects['destination']['records_match_fields'];
+$record_match_keys = array_keys($record_match_fields);
+$_SESSION['record_keys'] = serialize($record_match_keys);
+
+$serialized_module = serialize($module);
+$currentTimestampEpoch = time();
+$filename = "/tmp/serialized_data_" . $currentTimestampEpoch . ".txt";
+$file = fopen($filename, "w");
+if ($file) {
+    fwrite($file, $serialized_module);
+    fclose($file);
+    error_log("Serialized data has been written to $filename.");
+} else {
+    error_log("Unable to open $filename for writing.");
+}
+
+$_SESSION['filename'] = $filename;
+$response['filename'] = $filename;
+
 echo json_encode($response);

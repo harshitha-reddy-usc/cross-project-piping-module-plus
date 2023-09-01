@@ -2,9 +2,27 @@
 header('Content-Type: application/json');
 
 session_start();
-if(isset($_SESSION['module'])) {
-    $module = unserialize($_SESSION['module']);
+if(isset($_SESSION['record_keys'])) {
+    $record_match_keys = unserialize($_SESSION['record_keys']);
+} else {
+	error_log("no variables set");
+	$record_match_keys = [];
 }
+
+if(isset($_SESSION['filename'])) {
+	$filename = $_SESSION['filename'];
+	$file = fopen($filename, "r");
+	if ($file) {
+		$serializedData = fread($file, filesize($filename));
+		fclose($file);
+		$module = unserialize($serializedData);
+	} else {
+		error_log("Unable to open $filename for reading.");
+	}
+} else {
+	error_log("no filename set");
+}
+
 $failures = 0;
 $successes = 0;
 $pipe_attempts = 0;
@@ -12,12 +30,11 @@ $pipe_attempts = 0;
 $data_to_save = [];
 $start_index = intval($_GET['start_index']);
 $end_index = intval($_GET['end_index']);
-$record_match_fields = $module->projects['destination']['records_match_fields'];
-$record_match_keys = array_keys($record_match_fields);
+
 $records_ids = array_slice($record_match_keys, $start_index, $end_index - $start_index + 1);
 
 foreach ($records_ids as $val => $rid) {
-	$data =  $module->pipeToRecord($rid);
+	$data = $module->pipeToRecord($rid);
 	foreach($data as $recordid => $value) {
 		$data_to_save["$recordid"] = $value;
 	}
