@@ -34,8 +34,6 @@ if ($file) {
 } else {
     error_log("Unable to open $filename for writing.");
 }
-
 $_SESSION['filename'] = $filename;
-$response['filename'] = $filename;
 
 echo json_encode($response);

@@ -2,7 +2,7 @@ CrossProjectPipingModulePlus = {};
 
 CrossProjectPipingModulePlus.ajax_endpoint = "AJAX_ENDPOINT";
 CrossProjectPipingModulePlus.initial_ajax_endpoint = "INITIAL_AJAX";
-CrossProjectPipingModulePlus.delete_endpoint = "END_AJAX";
+CrossProjectPipingModulePlus.exit_endpoint = "END_AJAX";
 CrossProjectPipingModulePlus.processed_count = 0;
 CrossProjectPipingModulePlus.state = "success";
 
@@ -14,7 +14,7 @@ CrossProjectPipingModulePlus.ajax_complete = function(data, status, xhr) {
 			$(".cpp_pipe_all_loader_plus").css('display', 'none');
 			$("button#pipe_all_records_plus").attr('disabled', false);
 			window.location.reload();
-			deleteModuleFile();
+			exitTasks();
 		}
 	} else {
 		CrossProjectPipingModulePlus.state = "failure";
@@ -25,19 +25,18 @@ CrossProjectPipingModulePlus.ajax_complete = function(data, status, xhr) {
 		} else {
 			alert("The Sync Records Across Projects module failed to get a response for your action. Please contact a REDCap administrator or the author of this module.");
 		}
-		deleteModuleFile();
+		exitTasks();
 	}
 }
 
-function deleteModuleFile() {
+function exitTasks() {
 	$.ajax({
-		url: CrossProjectPipingModulePlus.delete_endpoint,
-		data: {'file' : CrossProjectPipingModulePlus.filename },
+		url: CrossProjectPipingModulePlus.exit_endpoint,
 		success: function (response) {
-		   console.log("temp file deleted");
+		   console.log("Post piping tasks completed");
 		},
 		error: function () {
-			console.log("failed to delete temp file");
+			console.log("Error in post piping tasks");
 		}
 	});
 }
@@ -84,7 +83,6 @@ CrossProjectPipingModulePlus.addButtonAfterJqueryLoaded = function() {
 					url: CrossProjectPipingModulePlus.initial_ajax_endpoint,
 					success: function(data) {
 						CrossProjectPipingModulePlus.totalRecords = data['total_records'];
-						CrossProjectPipingModulePlus.filename = data['filename'];
 						proccessPiping();
 					}
 				});

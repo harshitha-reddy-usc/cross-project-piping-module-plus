@@ -56,7 +56,6 @@ foreach ($batches as $batch) {
 		}
 	}
 }
-$module->createNewDestinationRecords();
 
 $no_change_records = $pipe_attempts - $successes - $failures;
 $changed_records = $pipe_attempts - $no_change_records;
